@@ -1,0 +1,19 @@
+[project]
+name = "eventbus"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Ben Liu",email = "ben.liu@homee.ai"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "python-dotenv>=1.1.1",
+    "pydantic>=2.11.7",
+    "google-cloud-pubsub==2.33.0"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
