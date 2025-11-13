@@ -1,13 +1,7 @@
-from typing import Dict, List, Optional
+from typing import List, Optional
 
-from ..models import Event, EventPriority
+from ..models import Event
 from . import BaseEventBus
-
-_PRIORITY_ORDER: Dict[EventPriority, int] = {
-    EventPriority.HIGH: 0,
-    EventPriority.NORMAL: 1,
-    EventPriority.LOW: 2,
-}
 
 
 class LocalEventBus(BaseEventBus):
