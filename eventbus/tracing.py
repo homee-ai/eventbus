@@ -62,10 +62,15 @@ def start_span(name: str = "span", trace_id: Optional[str] = None, parent_span_i
         _span_id_var.reset(token_span)
 
 
-def inject_trace_to_event(event: Event) -> None:
-    """Ensure event.metadata contains trace information from current context.
+def inject_trace_to_event(event: Event, new_trace: bool = False) -> None:
+    """Ensure event.metadata contains trace information.
+    - If new_trace=True, create a fresh trace_id/span_id and set it into context first.
+    - Else, reuse current context (creating if missing).
     Modifies event in-place.
     """
+    if new_trace:
+        # Force new trace for publish action
+        set_trace_ids(_gen_id(), _gen_id())
     trace_id, span_id = ensure_trace()
     trace_meta = event.metadata.get("trace") or {}
     trace_meta.update({"trace_id": trace_id, "span_id": span_id})

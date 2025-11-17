@@ -1,7 +1,10 @@
 import time
+import logging
 import random
 from eventbus.bus.google import PubSubEventBus
 from eventbus import Event
+
+logging.getLogger('PubSubEventBus').setLevel(logging.DEBUG)
 
 
 def amazing_ai_job(event: Event):

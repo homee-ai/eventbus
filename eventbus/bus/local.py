@@ -24,7 +24,7 @@ class LocalEventBus(BaseEventBus):
         if self._closed:
             raise RuntimeError("EventBus is closed")
 
-        inject_trace_to_event(event)
+        inject_trace_to_event(event, new_trace=True)
         self.logger.info("Published event", extra={"type": event.type})
         self._queue.append(event)
 

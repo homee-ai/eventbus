@@ -6,7 +6,8 @@ from eventbus.bus.local import LocalEventBus
 logging.getLogger('LocalEventBus').setLevel(logging.DEBUG)
 
 def amazing_ai_job(event: Event):
-    print("[handler]", event.model_dump())
+    logger = logging.getLogger('amazing_ai_job')
+    logger.info("[handler]", extra=event.model_dump())
 
 bus = LocalEventBus()
 

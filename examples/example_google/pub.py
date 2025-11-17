@@ -1,6 +1,9 @@
+import logging
 from eventbus.bus.google import PubSubEventBus
 from eventbus import Event, EventPriority
 
+
+logging.getLogger('PubSubEventBus').setLevel(logging.DEBUG)
 bus = PubSubEventBus(
     project_id="housing-agent-463406",
     topic_name="test",
@@ -9,7 +12,7 @@ bus = PubSubEventBus(
     nack_on_exception=False
 )
 
-
+logger = logging.getLogger('Runtime')
 
 for i in range(3):
     event = Event(
@@ -18,7 +21,7 @@ for i in range(3):
         detail={"job_id": i + 1, "action": "train-ai"},
     )
     bus.publish(event)
-    print(f"[publisher] Published event {i + 1}")
+    logger.info(f"[publisher] Published event", extra=event.model_dump())
 
 
 bus.close()

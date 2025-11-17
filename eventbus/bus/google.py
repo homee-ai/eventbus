@@ -71,6 +71,9 @@ class PubSubEventBus(BaseEventBus):
 
         self._ensure_resources()
 
+
+        self.logger.info(f"PubSubEventBus initialized: {self._topic_path} / {self._subscription_path}")
+
     def __enter__(self) -> Self:
         """Allow usage with 'with PubSubEventBus(...) as bus':"""
         self.auto_close = True
@@ -82,18 +85,24 @@ class PubSubEventBus(BaseEventBus):
         if self._closed:
             raise RuntimeError("EventBus is closed")
 
-        # Ensure trace is present in event and log publishing
-        inject_trace_to_event(event)
+        # Ensure trace is present in event and log publishing; new trace per publish
+        inject_trace_to_event(event, new_trace=True)
         self.logger.debug(f"Publishing event", extra={"type": event.type})
 
         data = json.dumps(event.model_dump()).encode("utf-8")
 
-        self._publisher.publish(
+        future = self._publisher.publish(
             self._topic_path,
             data=data,
             type=event.type,
             priority=str(event.priority.value) if hasattr(event, "priority") else EventPriority.NORMAL.value,
         )
+        try:
+            self.logger.info(f"{future.result()}")
+            future.result()
+        except Exception as e:
+            self.logger.error("Failed to publish event", extra={"type": event.type}, exc_info=e)
+            raise
 
     def consume(self, max_items: Optional[int] = None) -> bool:
         """
