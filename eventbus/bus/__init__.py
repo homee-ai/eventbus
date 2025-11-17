@@ -4,6 +4,7 @@ from types import TracebackType
 from typing import Type, Optional
 from typing import Protocol, Iterable, Callable, runtime_checkable, Self
 from ..models import Event
+from ..logging import setup_basic_logging
 
 EventHandler = Callable[[Event], None]
 EventName = str
@@ -26,6 +27,8 @@ class EventBus(Protocol):
 
 class BaseEventBus(ABC, EventBus):
     def __init__(self) -> None:
+        # Ensure logging is configured with trace info formatter
+        setup_basic_logging()
         self.logger = logging.getLogger(self.__class__.__name__)
         self._handlers: EventMapping = {}
         self.auto_close = False

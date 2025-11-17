@@ -8,6 +8,7 @@ from google.cloud import pubsub_v1
 from google.cloud.pubsub_v1.subscriber.futures import StreamingPullFuture
 
 from ..models import Event, EventPriority
+from ..tracing import inject_trace_to_event, extract_trace_from_event, start_span
 from . import BaseEventBus
 
 
@@ -81,6 +82,10 @@ class PubSubEventBus(BaseEventBus):
         if self._closed:
             raise RuntimeError("EventBus is closed")
 
+        # Ensure trace is present in event and log publishing
+        inject_trace_to_event(event)
+        self.logger.debug(f"Publishing event", extra={"type": event.type})
+
         data = json.dumps(event.model_dump()).encode("utf-8")
 
         self._publisher.publish(
@@ -131,14 +136,14 @@ class PubSubEventBus(BaseEventBus):
                 callback=self._on_message,
                 flow_control=flow_control,
             )
-            self.logger.info("Listening for messages on %s", self._subscription_path)
+            self.logger.debug(f"Listening for messages on {self._subscription_path}")
 
             try:
                 self._streaming_pull_future.result()
             except KeyboardInterrupt:
                 self.logger.info("Stopping worker (KeyboardInterrupt)")
-            except Exception:
-                self.logger.exception("Streaming pull terminated with error")
+            except Exception as e:
+                self.logger.exception("Streaming pull terminated with error", exc_info=e)
             finally:
                 if self._streaming_pull_future:
                     self._streaming_pull_future.cancel()
@@ -166,7 +171,15 @@ class PubSubEventBus(BaseEventBus):
         try:
             event = self._decode_message(message.data)
             handler = self._handlers.get(event.type)
-            handler(event)
+            # Extract trace and create a handling span
+            extract_trace_from_event(event)
+            with start_span(name=f"handle:{event.type}"):
+                if handler:
+                    self.logger.debug(f"Handling event", extra={"type": event.type})
+                    handler(event)
+                    self.logger.debug("Handled event", extra={"type": event.type})
+                else:
+                    self.logger.warning("No handler for event", extra={"type": event.type})
             if self.ack_on_success:
                 message.ack()
             else:

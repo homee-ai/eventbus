@@ -1,10 +1,12 @@
+import logging
 from eventbus import Event, EventPriority
 from eventbus.bus.local import LocalEventBus
 
 
+logging.getLogger('LocalEventBus').setLevel(logging.DEBUG)
+
 def amazing_ai_job(event: Event):
     print("[handler]", event.model_dump())
-
 
 bus = LocalEventBus()
 

@@ -1,8 +1,11 @@
+import time
+import random
 from eventbus.bus.google import PubSubEventBus
 from eventbus import Event
 
 
 def amazing_ai_job(event: Event):
+    time.sleep(random.random())
     print("[worker] handling event:", event.model_dump())
 
 
