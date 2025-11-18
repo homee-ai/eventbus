@@ -86,5 +86,10 @@ LOGGING_CONFIG: Dict[str, Any] = {
             "level": os.getenv("LOG_LEVEL", "INFO"),
             "propagate": True,
         },
+        "urllib3": {
+            "handlers": ["default"],
+            "level": "ERROR",
+            "propagate": False,
+        },
     },
 }

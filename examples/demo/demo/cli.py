@@ -8,13 +8,13 @@ from dotenv import load_dotenv
 
 from .tasks import job_registry
 from .handler import handle_show_config, handle_publish, handle_worker
-
+from .logging import setup_logging_config
 from eventbus.logging import LOGGING_CONFIG
 console = Console()
 
 CommandHandler = Callable[[argparse.Namespace], None]
 
-load_dotenv()
+
 # ========= Helpers =========
 
 
@@ -66,7 +66,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
-    setup_logging.dictConfig(LOGGING_CONFIG)
+    setup_logging_config()
 
     handlers: Dict[str, CommandHandler] = {
         "show-config": handle_show_config,
