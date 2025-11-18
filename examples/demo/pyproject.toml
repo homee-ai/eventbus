@@ -1,0 +1,22 @@
+[project]
+name = "demo"
+version = "0.0.0"
+description = "Just for the demo, let Homeer have more background on the event bus."
+authors = [
+    {name = "Ben Liu",email = "ben.liu@homee.ai"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "eventbus @ git+ssh://git@github.com/homee-ai/eventbus.git@main",
+    "python-dotenv (>=1.2.1,<2.0.0)",
+    "rich (>=14.2.0,<15.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project.scripts]
+eventbus-cli = "demo.cli:main"
