@@ -83,7 +83,7 @@ class PubSubEventBus(BaseEventBus):
         if self._subscription_filter:
             self.logger.info(f"Pub/Sub subscription filter: {self._subscription_filter}")
 
-        self.logger.info(f"PubSubEventBus initialized: {self._topic_path} / {self._subscription_path}")
+        self.logger.debug(f"PubSubEventBus initialized: {self._topic_path} / {self._subscription_path}")
 
     def __enter__(self) -> Self:
         """Allow usage with 'with PubSubEventBus(...) as bus':"""
@@ -196,7 +196,7 @@ class PubSubEventBus(BaseEventBus):
             with start_span(name=f"handle:{event.type}"):
                 if handler:
                     self.logger.debug(f"Handling event", extra={"type": event.type})
-                    handler(event)
+                    self._invoke_handler(handler, event)
                     self.logger.debug("Handled event", extra={"type": event.type})
                 else:
                     self.logger.warning("No handler for event", extra={"type": event.type})
@@ -243,7 +243,8 @@ class PubSubEventBus(BaseEventBus):
                     self.logger.exception("Failed to update subscription filter")
         except Exception:
             if not self.auto_create:
-                raise
+                self.logger.exception("Failed to get subscription, and auto_create=False", exc_info=True, extra={"subscription": self._subscription_path})
+
             req = {"name": self._subscription_path, "topic": self._topic_path}
             if self._subscription_filter:
                 req["filter"] = self._subscription_filter

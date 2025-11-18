@@ -6,11 +6,13 @@ from typing import Protocol, Iterable, Callable, runtime_checkable, Self
 from ..models import Event
 from ..logging import setup_basic_logging
 
-EventHandler = Callable[[Event], None]
+
+EventHandlerWithBus = Callable[[Optional["BaseEventBus"], "Event"], None]
+EventHandlerSimple = Callable[["Event"], None]
+
 EventName = str
 
-EventMapping = dict[EventName, EventHandler]
-
+EventMapping = dict[EventName, EventHandlerWithBus | EventHandlerSimple]
 
 @runtime_checkable
 class EventBus(Protocol):
@@ -46,7 +48,7 @@ class BaseEventBus(ABC, EventBus):
         ...
 
     def subscribe(self, event_handlers: EventMapping) -> None:
-        self._handlers = event_handlers.copy()
+        self._handlers.update(event_handlers)
 
     def unsubscribe(self, event_types: Iterable[str] = None) -> None:
         for event_type in event_types:
@@ -72,3 +74,16 @@ class BaseEventBus(ABC, EventBus):
         else:
             self.logger.info("EventBus closed cleanly.")
         return False
+
+    def _invoke_handler(self, handler: EventHandlerSimple | EventHandlerWithBus, event: Event) -> None:
+        """Internal method to invoke a handler, auto-detecting signature."""
+        import inspect
+        sig = inspect.signature(handler)
+
+        # Check number of parameters
+        if len(sig.parameters) == 1:
+            # Simple handler: handler(event)
+            handler(event)
+        else:
+            # Advanced handler: handler(bus, event)
+            handler(self, event)

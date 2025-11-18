@@ -29,22 +29,30 @@ class LocalEventBus(BaseEventBus):
         self._queue.append(event)
 
     def consume(self, max_items: Optional[int] = None) -> bool:
-        for index, event in enumerate(self._queue):
+        processed_count = 0
+        while self._queue:
+            if max_items is not None and processed_count >= max_items:
+                break
+
+            event = self._queue[0]
             handler = self._handlers.get(event.type)
             if handler:
-                # Extract trace from event and create a handling span
+                # Extract trace from the event and create a handling span
                 extract_trace_from_event(event)
                 with start_span(name=f"handle:{event.type}"):
                     try:
-                        self.logger.debug("Handling event type=%s", event.type)
-                        handler(event)
-                        self.logger.debug("Handled event type=%s", event.type)
+                        self.logger.debug(f"Handling event type={event.type}")
+                        self._invoke_handler(handler, event)
+                        self.logger.debug(f"Handled event type={event.type}")
                     except Exception:
                         self.logger.exception("Handler raised for event type=%s", event.type)
                     finally:
-                        del self._queue[index]
-                return True
-        return False
+                        del self._queue[0]
+                        processed_count += 1
+            else:
+                self.logger.warning(f"No handler for event type={event.type}, skipping")
+                del self._queue[0]
+        return processed_count > 0
 
     def run_forever(self, auto_close: bool = True) -> None:
         # Process all queued events
@@ -55,7 +63,7 @@ class LocalEventBus(BaseEventBus):
                 with start_span(name=f"handle:{event.type}"):
                     try:
                         self.logger.debug("Handling event.", extra={"type": event.type})
-                        handler(event)
+                        self._invoke_handler(handler, event)
                         self.logger.debug("Handled event.", extra={"type": event.type})
                     except Exception as e:
                         self.logger.exception(f"Handler raised for event.", extra={"type": event.type}, exc_info=e)

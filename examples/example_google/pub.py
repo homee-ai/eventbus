@@ -6,8 +6,7 @@ from eventbus import Event, EventPriority
 logging.getLogger('PubSubEventBus').setLevel(logging.DEBUG)
 bus = PubSubEventBus(
     project_id="housing-agent-463406",
-    topic_name="test",
-    prefix="ben-local",
+    topic_name="ben-local-test",
     auto_create=False,
     nack_on_exception=False
 )

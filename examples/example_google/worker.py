@@ -15,6 +15,7 @@ def amazing_ai_job(event: Event):
 with PubSubEventBus(
         project_id="housing-agent-463406",
         topic_name="ben-local-test",
+        # auto_create=True,
         # give each worker its own subscription name
         subscription_name="ben-local-test-sub-example-a",
         # only receive events with type==example_a
