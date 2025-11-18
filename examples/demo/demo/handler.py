@@ -9,6 +9,7 @@ from rich.table import Table
 
 from .setting import load_settings
 from eventbus.models import Event
+from eventbus.tracing import setup_tracing
 from eventbus.bus.google import PubSubEventBus
 from demo.tasks import job_registry
 
@@ -48,6 +49,10 @@ def handle_publish(args: argparse.Namespace) -> None:
         eventbus-cli publish --type test --payload '{"x":1}'
     """
     setting = load_settings()
+    setup_tracing(
+        otlp_endpoint=setting.otlp_endpoint,
+        service_name=setting.otlp_service_name,
+    )
     payload = _parse_payload(args.payload)
 
     event = Event(type=args.type, detail=payload)
@@ -68,7 +73,10 @@ def handle_worker(args: argparse.Namespace) -> None:
     Start a long-running worker to consume events and dispatch to selected jobs.
     """
     setting = load_settings()
-
+    setup_tracing(
+        otlp_endpoint=setting.otlp_endpoint,
+        service_name=setting.otlp_service_name,
+    )
     execution_job_mapping: Dict[str, Callable[..., Any]] = {
         job_name: job_registry[job_name] for job_name in args.registry_job_name
     }
