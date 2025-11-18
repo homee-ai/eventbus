@@ -192,8 +192,8 @@ class PubSubEventBus(BaseEventBus):
             event = self._decode_message(message.data)
             handler = self._handlers.get(event.type)
             # Extract trace and create a handling span
-            extract_trace_from_event(event)
-            with start_span(name=f"handle:{event.type}"):
+            trace_id, span_id=extract_trace_from_event(event)
+            with start_span(name=f"handle:{event.type}", trace_id=trace_id, parent_span_id=span_id):
                 if handler:
                     self.logger.debug(f"Handling event", extra={"type": event.type})
                     self._invoke_handler(handler, event)

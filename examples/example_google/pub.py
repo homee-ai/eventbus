@@ -1,9 +1,15 @@
 import logging
 from eventbus.bus.google import PubSubEventBus
 from eventbus import Event, EventPriority
+from eventbus.tracing import setup_tracing
 
 
 logging.getLogger('PubSubEventBus').setLevel(logging.DEBUG)
+setup_tracing(
+    otlp_endpoint="https://otel-collector.dev.housingagent.homee.ai/v1/traces",
+    service_name="ben-local-test-event-bus",
+)
+
 bus = PubSubEventBus(
     project_id="housing-agent-463406",
     topic_name="ben-local-test",

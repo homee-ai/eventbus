@@ -29,6 +29,17 @@ def _gen_id() -> str:
     return uuid.uuid4().hex
 
 
+def _gen_trace_id() -> str:
+    """Generate a 32-hex-character trace_id (128-bit)"""
+    return uuid.uuid4().hex  # 32 hex chars
+
+
+def _gen_span_id() -> str:
+    """Generate a 16-hex-character span_id (64-bit). Use lower 64 bits of UUID4."""
+    # uuid4 is 128-bit (32 hex). Take last 16 hex chars to simulate 64-bit id.
+    return uuid.uuid4().hex[-16:]
+
+
 def _hex_id(n: int, length: int) -> str:
     return f"{n:0{length}x}"
 
@@ -44,8 +55,7 @@ def setup_tracing(
     otlp_endpoint: Optional[str] = None,
     *,
     service_name: str = "eventbus",
-    headers: Optional[Dict[str, str]] = None,
-    insecure: bool = False,
+    headers: Optional[Dict[str, str]] = None
 ) -> bool:
     """Optionally configure OpenTelemetry to export spans to an OTLP collector.
 
@@ -55,9 +65,7 @@ def setup_tracing(
     Example:
         setup_tracing(
             otlp_endpoint="http://localhost:4318/v1/traces",
-            service_name="eventbus-demo",
-            headers={"Authorization": "Bearer ..."},
-        )
+            service_name="eventbus-demo")
     """
     global _TRACER
     if not _OTEL_AVAILABLE:
@@ -69,8 +77,7 @@ def setup_tracing(
     if otlp_endpoint:
         exporter = OTLPSpanExporter(
             endpoint=otlp_endpoint,
-            headers=headers or {},
-            insecure=insecure,
+            headers=headers or {}
         )
         processor = BatchSpanProcessor(exporter)
         provider.add_span_processor(processor)
@@ -123,9 +130,9 @@ def ensure_trace() -> Tuple[str, str]:
     """Ensure there is a trace in the context, create if missing. Returns (trace_id, span_id)."""
     trace_id, span_id = get_trace_ids()
     if trace_id is None:
-        trace_id = _gen_id()
+        trace_id = _gen_trace_id()
     if span_id is None:
-        span_id = _gen_id()
+        span_id = _gen_span_id()
     set_trace_ids(trace_id, span_id)
     return trace_id, span_id
 
@@ -204,16 +211,35 @@ def start_span(
 
 def inject_trace_to_event(event: Event, new_trace: bool = False) -> None:
     """Ensure event.metadata contains trace information.
-    - If new_trace=True, create a fresh trace_id/span_id and set it into context first.
+    - If event.metadata already contains a trace.trace_id, ALWAYS keep using it and sync context to it.
+    - If new_trace=True and no existing trace_id on the event, create a fresh (trace_id, span_id) and set context.
     - Else, reuse current context (creating if missing).
     Modifies event in-place.
     """
-    if new_trace:
-        # Force new trace for publish action (local context)
-        set_trace_ids(_gen_id(), _gen_id())
-    trace_id_val, span_id_val = ensure_trace()
+    # Read any existing trace info on the event
     trace_meta = event.metadata.get("trace") or {}
-    trace_meta.update({"trace_id": trace_id_val, "span_id": span_id_val})
+    existing_trace_id = trace_meta.get("trace_id")
+    existing_span_id = trace_meta.get("span_id")
+
+    final_trace_id: Optional[str]
+    final_span_id: Optional[str]
+
+    if existing_trace_id:
+        # Respect existing trace_id from the event and keep using it
+        # If span_id missing, generate one (or reuse current if present)
+        current_trace, current_span = get_trace_ids()
+        final_trace_id = existing_trace_id
+        final_span_id = existing_span_id or current_span or _gen_span_id()
+        set_trace_ids(final_trace_id, final_span_id)
+    else:
+        if new_trace:
+            # Force new trace for publish action when event didn't carry a trace
+            set_trace_ids(_gen_trace_id(), _gen_span_id())
+        # Ensure context has ids
+        final_trace_id, final_span_id = ensure_trace()
+
+    # Update event metadata trace, preserving other custom fields if any
+    trace_meta.update({"trace_id": final_trace_id, "span_id": final_span_id})
     event.metadata["trace"] = trace_meta
 
 
@@ -222,6 +248,7 @@ def extract_trace_from_event(event: Event) -> Tuple[Optional[str], Optional[str]
     Returns (trace_id, span_id) that were found (or (None, None)).
     """
     trace_meta = event.metadata.get("trace") if hasattr(event, "metadata") else None
+
     if isinstance(trace_meta, dict):
         trace_id_val = trace_meta.get("trace_id")
         span_id_val = trace_meta.get("span_id")
