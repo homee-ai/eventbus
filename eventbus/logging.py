@@ -91,5 +91,20 @@ LOGGING_CONFIG: Dict[str, Any] = {
             "level": "ERROR",
             "propagate": False,
         },
+        "ack-nack": {
+            "handlers": ["default"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "subscriber-flow-control": {
+            "handlers": ["default"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "callback-delivery": {
+            "handlers": ["default"],
+            "level": "ERROR",
+            "propagate": False,
+        },
     },
 }
