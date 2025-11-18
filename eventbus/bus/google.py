@@ -116,6 +116,7 @@ class PubSubEventBus(BaseEventBus):
             except Exception as e:
                 self.logger.error("Failed to publish event", extra={"type": event.type}, exc_info=e)
                 raise
+            self.logger.info(f"Published event", extra={"type": event.type})
 
     def consume(self, max_items: Optional[int] = None) -> bool:
         """
