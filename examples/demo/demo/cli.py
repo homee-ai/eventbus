@@ -62,7 +62,6 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    logging.getLogger('PubSubEventBus').setLevel(logging.DEBUG)
     parser = build_parser()
     args = parser.parse_args()
 
