@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import argparse
 from typing import Callable, Dict
 from rich.console import Console
@@ -61,6 +62,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    logging.getLogger('PubSubEventBus').setLevel(logging.DEBUG)
     parser = build_parser()
     args = parser.parse_args()
 

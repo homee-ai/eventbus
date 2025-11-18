@@ -57,7 +57,7 @@ def setup_basic_logging(level: int = logging.INFO, fmt: Optional[str] = None) ->
     Call once at application startup or before using eventbus if you want formatted output.
     """
     if fmt is None:
-        fmt = "%(asctime)s %(levelname)s [trace_id=%(trace_id)s span_id=%(span_id)s] %(name)s - %(message)s"
+        fmt = "%(asctime)s %(levelname)s [trace_id=%(trace_id)s span_id=%(span_id)s] %(name)s - %(message)s %(pathname)s:%(lineno)d"
 
     handler = logging.StreamHandler()
     handler.setFormatter(EnhancedFormatter(fmt))
