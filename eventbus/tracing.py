@@ -257,14 +257,3 @@ def extract_trace_from_event(event: Event) -> Tuple[Optional[str], Optional[str]
         return trace_id_val, span_id_val
     return None, None
 
-
-def get_trace_fields_for_log() -> Dict[str, Any]:
-    """Return a dict with trace_id and span_id for logging enrichment.
-
-    If OpenTelemetry is active and a span is current, prefer its IDs.
-    """
-    trace_id_val, span_id_val = get_trace_ids()
-    return {
-        "trace_id": trace_id_val or "-",
-        "span_id": span_id_val or "-",
-    }

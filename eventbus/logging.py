@@ -1,71 +1,92 @@
-import json
+import os
+from typing import Any, Dict
 import logging
-from typing import Optional
-from .tracing import get_trace_fields_for_log
+from pythonjsonlogger import json
+from opentelemetry import trace
+from dotenv import load_dotenv
 
+load_dotenv()
 
-class TraceContextFilter(logging.Filter):
-    """Logging filter that injects trace_id and span_id into LogRecord."""
+class OTELTraceFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
-        fields = get_trace_fields_for_log()
-        # Attach as attributes to be used in Formatter
-        setattr(record, "trace_id", fields["trace_id"])  # type: ignore[attr-defined]
-        setattr(record, "span_id", fields["span_id"])    # type: ignore[attr-defined]
+        span = trace.get_current_span()
+        span_ctx = span.get_span_context() if span is not None else None
+
+        if span_ctx and span_ctx.is_valid:
+            record.trace_id = format(span_ctx.trace_id, "032x")
+            record.span_id = format(span_ctx.span_id, "016x")
+        else:
+            record.trace_id = "-"
+            record.span_id = "-"
         return True
 
 
-# Standard attributes present on LogRecord; anything else is considered "extra"
-_STANDARD_RECORD_ATTRS = {
-    'name', 'msg', 'args', 'levelname', 'levelno', 'pathname', 'filename', 'module',
-    'exc_info', 'exc_text', 'stack_info', 'lineno', 'funcName', 'created', 'msecs',
-    'relativeCreated', 'thread', 'threadName', 'processName', 'process', 'message',
-    'asctime', 'taskName'
+class HomeeNestedJsonFormatter(json.JsonFormatter):
+    def process_log_record(self, log_record: Dict[str, Any]) -> Dict[str, Any]:
+        asctime = log_record.pop("asctime", None)
+        level = log_record.pop("levelname", None)
+        logger_name = log_record.pop("name", None)
+        message = log_record.pop("message", None)
+        pathname = log_record.pop("pathname", None)
+        lineno = log_record.pop("lineno", None)
+        trace_id = log_record.pop("trace_id", None)
+        span_id = log_record.pop("span_id", None)
+
+        nested = {
+            "asctime": asctime,
+            "level": level,
+            "logger": logger_name,
+            "message": message,
+            "extra": log_record,
+            "detail": {
+                "pathname": pathname,
+                "lineno": lineno,
+                "trace_id": trace_id,
+                "span_id": span_id,
+            },
+        }
+        return nested
+
+
+_env = (os.getenv("ENVIRONMENT") or "").lower()
+_IS_LOCAL = _env in {"local"}
+
+# Choose a formatter name dynamically
+_formatter_name = "text" if _IS_LOCAL else "json"
+
+LOGGING_CONFIG: Dict[str, Any] = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "otel_trace": {"()": OTELTraceFilter},
+    },
+    "formatters": {
+        # JSON formatter for non-local environments
+        "json": {
+            "()": HomeeNestedJsonFormatter,
+            "format": "%(asctime) %(name) %(pathname)s %(lineno)d %(levelname)s %(message)s %(trace_id)s %(span_id)s",
+            "json_ensure_ascii": False,
+        },
+        # Plain text formatter for local
+        "text": {
+            "()": "logging.Formatter",
+            "format": "%(levelname)s | %(name)s | %(message)s | path=%(pathname)s:%(lineno)d | trace_id=%(trace_id)s",
+        },
+    },
+    "handlers": {
+        "default": {
+            "formatter": _formatter_name,
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "filters": ["otel_trace"],
+        },
+    },
+    "loggers": {
+        # default log setting
+        "": {
+            "handlers": ["default"],
+            "level": os.getenv("LOG_LEVEL", "INFO"),
+            "propagate": True,
+        },
+    },
 }
-
-
-class EnhancedFormatter(logging.Formatter):
-    """Formatter that appends any logging `extra` fields as JSON at the end.
-
-    Trace fields (trace_id/span_id) are excluded because they already appear in the prefix.
-    """
-    def format(self, record: logging.LogRecord) -> str:
-        base = super().format(record)
-        # Collect extras: keys not in standard set and not our trace fields
-        extras = {}
-        for k, v in record.__dict__.items():
-            if k in _STANDARD_RECORD_ATTRS:
-                continue
-            if k in ("trace_id", "span_id"):
-                continue
-            # Private/internal attributes are ignored
-            if k.startswith('_'):
-                continue
-            extras[k] = v
-        if extras:
-            try:
-                extra_json = json.dumps(extras, ensure_ascii=False, default=str, sort_keys=True)
-            except Exception:
-                # Fallback to str() if serialization fails
-                extra_json = str(extras)
-            return f"{base} {extra_json}"
-        return base
-
-
-def setup_basic_logging(level: int = logging.INFO, fmt: Optional[str] = None) -> None:
-    """Configure root logger with a default formatter including trace fields and extras.
-
-    Call once at application startup or before using eventbus if you want formatted output.
-    """
-    if fmt is None:
-        fmt = "%(asctime)s %(levelname)s [trace_id=%(trace_id)s span_id=%(span_id)s] %(name)s - %(message)s %(pathname)s:%(lineno)d"
-
-    handler = logging.StreamHandler()
-    handler.setFormatter(EnhancedFormatter(fmt))
-    handler.addFilter(TraceContextFilter())
-
-    root = logging.getLogger()
-    # Avoid adding duplicate handlers if called multiple times
-    already = any(isinstance(h, logging.StreamHandler) and isinstance(getattr(h, 'formatter', None), logging.Formatter) for h in root.handlers)
-    if not already:
-        root.addHandler(handler)
-    root.setLevel(level)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import logging
+import logging.config as logging_config
 import argparse
 from typing import Callable, Dict
 from rich.console import Console
@@ -8,6 +8,7 @@ from rich.console import Console
 from .tasks import job_registry
 from .handler import handle_show_config, handle_publish, handle_worker
 
+from eventbus.logging import LOGGING_CONFIG
 console = Console()
 
 CommandHandler = Callable[[argparse.Namespace], None]
@@ -64,6 +65,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
+    logging_config.dictConfig(LOGGING_CONFIG)
 
     handlers: Dict[str, CommandHandler] = {
         "show-config": handle_show_config,

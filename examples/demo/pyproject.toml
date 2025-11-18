@@ -10,7 +10,8 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "eventbus @ git+ssh://git@github.com/homee-ai/eventbus.git@main",
     "python-dotenv (>=1.2.1,<2.0.0)",
-    "rich (>=14.2.0,<15.0.0)"
+    "rich (>=14.2.0,<15.0.0)",
+    "python-json-logger (>=4.0.0,<5.0.0)"
 ]
 
 
