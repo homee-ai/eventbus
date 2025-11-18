@@ -213,7 +213,7 @@ def inject_trace_to_event(event: Event, new_trace: bool = False) -> Event:
     """Ensure event.metadata contains trace information.
     - If event.metadata already contains a trace.trace_id, ALWAYS keep using it and sync context to it.
     - If new_trace=True and no existing trace_id on the event, create a fresh (trace_id, span_id) and set context.
-    - Else, reuse current context (creating if missing).
+    - Else, reuse the current context (creating if missing).
     Modifies event in-place.
     """
     # Read any existing trace info on the event

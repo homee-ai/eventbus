@@ -97,7 +97,7 @@ class PubSubEventBus(BaseEventBus):
         if self._closed:
             raise RuntimeError("EventBus is closed")
 
-        # Ensure trace is present in event and log publishing; new trace per publish
+        # Ensure trace is present in event and log publishing; new trace per publication
         event = inject_trace_to_event(event, new_trace=False)
         event_trace = event.metadata.get("trace", {})
         self.logger.debug(f"Publishing event", extra={"type": event.type})
