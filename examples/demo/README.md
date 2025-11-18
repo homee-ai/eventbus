@@ -104,38 +104,16 @@ gcloud auth application-default login
 Build the demo image from the demo directory:
   ```
   cd examples/demo
-  docker build -t eventbus-demo . --platform linux/amd64
+  ssh-add ~/.ssh/id_ed25519 # ur github private key
+  ssh-add -l # check that it's added
   ```
-Pass your environment and credentials into the container when running. Example with a service account key file:
+  example output:
   ```
-  docker run --rm \
-    --env-file ./.env \
-    -e GOOGLE_APPLICATION_CREDENTIALS=/gcp/key.json \
-    -v /absolute/path/to/key.json:/gcp/key.json:ro \
-    eventbus-demo \
-    eventbus-cli show-config
+  256 SHA256:xxxxxxxxxxx/yyyyyyyyyyy benliu@Mac.localdomain (ED25519)
   ```
-Run the worker in the container:
+  build the image:
   ```
-  docker run --rm \
-    --env-file ./.env \
-    -e GOOGLE_APPLICATION_CREDENTIALS=/gcp/key.json \
-    -v /absolute/path/to/key.json:/gcp/key.json:ro \
-    eventbus-demo \
-    eventbus-cli worker \
-      --registry-job-name amazing_ai.crawler \
-      --registry-job-name amazing_ai.result
-  ```
-Publish from another container or locally (ensure both use the same topic/subscription):
-  ```
-  docker run --rm \
-    --env-file ./.env \
-    -e GOOGLE_APPLICATION_CREDENTIALS=/gcp/key.json \
-    -v /absolute/path/to/key.json:/gcp/key.json:ro \
-    eventbus-demo \
-    eventbus-cli publish \
-      --type amazing_ai.crawler \
-      --payload '{"url":"https://example.com"}'
+  docker build --ssh default -t eventbus-demo . --platform linux/amd64
   ```
 
 ## Notes on Pub/Sub resources
