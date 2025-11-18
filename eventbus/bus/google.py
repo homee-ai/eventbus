@@ -63,6 +63,7 @@ class PubSubEventBus(BaseEventBus):
 
         self.ack_on_success = ack_on_success
         self.nack_on_exception = nack_on_exception
+        self.filter_types = filter_types
 
         # Build Pub/Sub filter string if filter_types provided
         self._subscription_filter: Optional[str] = None
@@ -194,12 +195,14 @@ class PubSubEventBus(BaseEventBus):
             # Extract trace and create a handling span
             trace_id, span_id=extract_trace_from_event(event)
             with start_span(name=f"handle:{event.type}", trace_id=trace_id, parent_span_id=span_id):
-                if handler:
-                    self.logger.debug(f"Handling event", extra={"type": event.type})
-                    self._invoke_handler(handler, event)
-                    self.logger.debug("Handled event", extra={"type": event.type})
-                else:
+                if not handler and self.filter_types:
                     self.logger.warning("No handler for event", extra={"type": event.type})
+                    message.ack()
+                    return
+                self.logger.debug(f"Handling event", extra={"type": event.type})
+                self._invoke_handler(handler, event)
+                self.logger.debug("Handled event", extra={"type": event.type})
+
             if self.ack_on_success:
                 message.ack()
             else:
