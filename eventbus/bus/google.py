@@ -38,29 +38,37 @@ class PubSubEventBus(BaseEventBus):
     def __init__(
             self,
             project_id: str,
-            prefix: str,
             topic_name: str,
             auto_create: bool = False,
             ack_on_success: bool = True,
             nack_on_exception: bool = True,
+            subscription_name: Optional[str] = None,
+            filter_types: Optional[list[str]] = None,
     ) -> None:
         """
         :param project_id: GCP Project ID (falls back to env GCP_PROJECT_ID)
-        :param prefix: Resource name prefix (topic and subscription)
-        :param topic_name: Base topic name (full topic: {prefix}-{topic_name})
-        :param auto_create: Create topic/subscription if absent
+        :param topic_name: Pub/Sub topic name
+        :param auto_create: Create topic and subscription if absent
         :param ack_on_success: Ack after all handlers succeed
         :param nack_on_exception: Nack immediately when handler raises (else allow redelivery on ack-deadline)
+        :param subscription_name: Optional explicit subscription name (default: {topic_name}-sub-{filter_types[0]-{filter_types[1]...}})
+        :param filter_types: Optional list of event types to filter this subscription by (Pub/Sub server-side filtering)
         """
         super().__init__()
         self.project_id = project_id
-        self.prefix = prefix
-        self.topic_name = f"{prefix}-{topic_name}"
-        self.subscription_name = f"{prefix}-{topic_name}-sub"
+        self.topic_name = topic_name
+        # allow overriding subscription name so multiple filtered subscriptions can share the same topic
+        self.subscription_name = subscription_name or f"{topic_name}-sub"
         self.auto_create = auto_create
 
         self.ack_on_success = ack_on_success
         self.nack_on_exception = nack_on_exception
+
+        # Build Pub/Sub filter string if filter_types provided
+        self._subscription_filter: Optional[str] = None
+        if filter_types:
+            exprs = [f'attributes.type="{t}"' for t in filter_types]
+            self._subscription_filter = " OR ".join(exprs)
 
         self._streaming_pull_future: Optional[StreamingPullFuture] = None
         self._publisher = pubsub_v1.PublisherClient()
@@ -71,6 +79,9 @@ class PubSubEventBus(BaseEventBus):
 
         self._ensure_resources()
 
+        # Log filter info
+        if self._subscription_filter:
+            self.logger.info(f"Pub/Sub subscription filter: {self._subscription_filter}")
 
         self.logger.info(f"PubSubEventBus initialized: {self._topic_path} / {self._subscription_path}")
 
@@ -219,11 +230,23 @@ class PubSubEventBus(BaseEventBus):
 
         # Subscription
         try:
-            self._subscriber.get_subscription(request={"subscription": self._subscription_path})
+            sub = self._subscriber.get_subscription(request={"subscription": self._subscription_path})
+            # If subscription exists but filter desired and differs, update it
+            if self._subscription_filter is not None and getattr(sub, "filter", None) != self._subscription_filter:
+                try:
+                    self._subscriber.update_subscription(request={
+                        "subscription": {"name": self._subscription_path, "filter": self._subscription_filter},
+                        "update_mask": {"paths": ["filter"]},
+                    })
+                    self.logger.info("Updated existed subscription filter", extra={"subscription": self._subscription_path})
+                except Exception:
+                    self.logger.exception("Failed to update subscription filter")
         except Exception:
             if not self.auto_create:
                 raise
             req = {"name": self._subscription_path, "topic": self._topic_path}
+            if self._subscription_filter:
+                req["filter"] = self._subscription_filter
             try:
                 self._subscriber.create_subscription(request=req)
             except AlreadyExists:
