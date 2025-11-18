@@ -20,8 +20,8 @@ class Settings:
 def load_settings() -> Settings:
     load_dotenv()
     return Settings(
-        environment=os.getenv("ENVIRONMENT"),
-        log_level=os.getenv("LOG_LEVEL"),
+        environment=os.getenv("ENVIRONMENT", "local"),
+        log_level=os.getenv("LOG_LEVEL", "INFO"),
         project_id=os.getenv("GCP_PROJECT_ID"),
         topic_id=os.getenv("PUBSUB_TOPIC_NAME"),
         subscription_id=os.getenv("PUBSUB_SUBSCRIPTION_NAME"),
