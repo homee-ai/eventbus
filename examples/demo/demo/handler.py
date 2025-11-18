@@ -86,5 +86,6 @@ def handle_worker(args: argparse.Namespace) -> None:
         subscription_name=setting.subscription_id,
         auto_create=True,
     ) as bus:
+        console.print(f"[green] {execution_job_mapping}")
         bus.subscribe(execution_job_mapping)
         bus.run_forever()

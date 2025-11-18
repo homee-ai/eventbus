@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import logging.config as logging_config
+import logging.config as setup_logging
 import argparse
 from typing import Callable, Dict
 from rich.console import Console
+from dotenv import load_dotenv
 
 from .tasks import job_registry
 from .handler import handle_show_config, handle_publish, handle_worker
@@ -13,7 +14,7 @@ console = Console()
 
 CommandHandler = Callable[[argparse.Namespace], None]
 
-
+load_dotenv()
 # ========= Helpers =========
 
 
@@ -65,7 +66,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
-    logging_config.dictConfig(LOGGING_CONFIG)
+    setup_logging.dictConfig(LOGGING_CONFIG)
 
     handlers: Dict[str, CommandHandler] = {
         "show-config": handle_show_config,

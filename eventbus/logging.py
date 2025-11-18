@@ -3,9 +3,7 @@ from typing import Any, Dict
 import logging
 from pythonjsonlogger import json
 from opentelemetry import trace
-from dotenv import load_dotenv
 
-load_dotenv()
 
 class OTELTraceFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
@@ -70,7 +68,7 @@ LOGGING_CONFIG: Dict[str, Any] = {
         # Plain text formatter for local
         "text": {
             "()": "logging.Formatter",
-            "format": "%(levelname)s | %(name)s | %(message)s | path=%(pathname)s:%(lineno)d | trace_id=%(trace_id)s",
+            "format": "%(levelname)s | %(name)s | %(message)s | trace_id=%(trace_id)s",
         },
     },
     "handlers": {
