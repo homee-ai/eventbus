@@ -98,23 +98,24 @@ class PubSubEventBus(BaseEventBus):
             raise RuntimeError("EventBus is closed")
 
         # Ensure trace is present in event and log publishing; new trace per publish
-        inject_trace_to_event(event, new_trace=True)
+        event = inject_trace_to_event(event, new_trace=False)
+        event_trace = event.metadata.get("trace", {})
         self.logger.debug(f"Publishing event", extra={"type": event.type})
 
         data = json.dumps(event.model_dump()).encode("utf-8")
-
-        future = self._publisher.publish(
-            self._topic_path,
-            data=data,
-            type=event.type,
-            priority=str(event.priority.value) if hasattr(event, "priority") else EventPriority.NORMAL.value,
-        )
-        try:
-            self.logger.info(f"{future.result()}")
-            future.result()
-        except Exception as e:
-            self.logger.error("Failed to publish event", extra={"type": event.type}, exc_info=e)
-            raise
+        with start_span(name=f"publish:{event.type}", trace_id=event_trace.get("trace_id"), parent_span_id=event_trace.get("span_id"),):
+            future = self._publisher.publish(
+                self._topic_path,
+                data=data,
+                type=event.type,
+                priority=str(event.priority.value) if hasattr(event, "priority") else EventPriority.NORMAL.value,
+            )
+            try:
+                self.logger.debug(f"Pub/Sub message id: {future.result()}")
+                future.result()
+            except Exception as e:
+                self.logger.error("Failed to publish event", extra={"type": event.type}, exc_info=e)
+                raise
 
     def consume(self, max_items: Optional[int] = None) -> bool:
         """

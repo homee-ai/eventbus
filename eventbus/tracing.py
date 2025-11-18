@@ -209,7 +209,7 @@ def start_span(
         _span_id_var.reset(token_span)
 
 
-def inject_trace_to_event(event: Event, new_trace: bool = False) -> None:
+def inject_trace_to_event(event: Event, new_trace: bool = False) -> Event:
     """Ensure event.metadata contains trace information.
     - If event.metadata already contains a trace.trace_id, ALWAYS keep using it and sync context to it.
     - If new_trace=True and no existing trace_id on the event, create a fresh (trace_id, span_id) and set context.
@@ -241,6 +241,7 @@ def inject_trace_to_event(event: Event, new_trace: bool = False) -> None:
     # Update event metadata trace, preserving other custom fields if any
     trace_meta.update({"trace_id": final_trace_id, "span_id": final_span_id})
     event.metadata["trace"] = trace_meta
+    return event
 
 
 def extract_trace_from_event(event: Event) -> Tuple[Optional[str], Optional[str]]:
