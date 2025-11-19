@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 @register("amazing_ai.result")
-def result(bus: BaseEventBus, event: Event) -> None:
+def result(event: Event) -> None:
     url = event.detail.get("url")
     output = event.detail.get("output")
     logger.info(f"Origin URL: {url}")
