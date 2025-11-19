@@ -1,30 +1,17 @@
 from __future__ import annotations
 
-import logging.config as setup_logging
 import argparse
 from typing import Callable, Dict
 from rich.console import Console
-from dotenv import load_dotenv
 
-from .tasks import job_registry
 from .handler import handle_show_config, handle_publish, handle_worker
 from .logging import setup_logging_config
-from eventbus.logging import LOGGING_CONFIG
-console = Console()
 
+console = Console()
 CommandHandler = Callable[[argparse.Namespace], None]
 
 
 # ========= Helpers =========
-
-
-def valid_job(job_name: str) -> str:
-    """Validate that the job exists in the registry (for argparse)."""
-    if job_name not in job_registry:
-        raise argparse.ArgumentTypeError(f"Job '{job_name}' not found in registry.")
-    return job_name
-
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="eventbus-cli")
     subs = parser.add_subparsers(dest="cmd", required=True)
@@ -45,7 +32,6 @@ def build_parser() -> argparse.ArgumentParser:
     p_worker.add_argument(
         "--registry-job-name",
         action="append",
-        type=valid_job,
         required=True,
         help="Job name(s) registered in demo.tasks.job_registry (can repeat)",
     )
