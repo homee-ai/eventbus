@@ -3,7 +3,7 @@ import logging
 from ..registry import register
 
 from eventbus.models import Event
-from eventbus.bus import BaseEventBus
+
 
 logger = logging.getLogger(__name__)
 

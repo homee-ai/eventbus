@@ -76,7 +76,6 @@ gcloud auth application-default login
     │ subscription_id   │ ben-local-test-sub                                         │
     │ otlp_endpoint     │ https://otel-collector.dev.housingagent.homee.ai/v1/traces │
     │ otlp_service_name │ demo                                                       │
-    │ idle_sleep        │ 0.3                                                        │
     └───────────────────┴────────────────────────────────────────────────────────────┘
     ```
 
