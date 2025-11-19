@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
-
+#NOTE: It’s better to use a Pydantic dataclass instead of a standard dataclass, but considering the overall library dependencies, we use a regular dataclass here.
 @dataclass
 class Settings:
     environment: str
@@ -14,7 +14,6 @@ class Settings:
     subscription_id: str
     otlp_endpoint: str
     otlp_service_name: str
-    idle_sleep: float = 0.3
 
 
 def load_settings() -> Settings:
