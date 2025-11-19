@@ -1,10 +1,11 @@
-import os
 import logging.config as setup_logging
 from dotenv import load_dotenv
 from eventbus.logging import LOGGING_CONFIG
 
 from .setting import load_settings
+
 load_dotenv()
+
 
 def setup_logging_config():
     setting = load_settings()

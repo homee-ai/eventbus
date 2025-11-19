@@ -18,11 +18,13 @@ from eventbus.bus import EventName, EventHandlerWithBus, EventHandlerSimple
 
 REGISTRY: Dict[EventName, EventHandlerWithBus | EventHandlerSimple] = defaultdict()
 
-class RegistryError(Exception):
-    ...
+
+class RegistryError(Exception): ...
+
 
 def _is_event_type(t) -> bool:
     from eventbus.models import Event
+
     return isinstance(t, type) and issubclass(t, Event)
 
 
@@ -74,9 +76,8 @@ def register(task_name: str):
             t1 = hints.get(p1.name)
             t2 = hints.get(p2.name)
 
-            valid = (
-                (_is_bus_like_type(t1) and _is_event_type(t2)) or
-                (_is_event_type(t1) and _is_bus_like_type(t2))
+            valid = (_is_bus_like_type(t1) and _is_event_type(t2)) or (
+                _is_event_type(t1) and _is_bus_like_type(t2)
             )
 
             if not valid:

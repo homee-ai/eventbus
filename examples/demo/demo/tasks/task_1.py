@@ -8,6 +8,7 @@ from eventbus.bus import BaseEventBus
 
 logger = logging.getLogger(__name__)
 
+
 @register("amazing_ai.crawler")
 def web_crawler(bus: BaseEventBus, event: Event) -> None:
     url = event.detail.get("url")

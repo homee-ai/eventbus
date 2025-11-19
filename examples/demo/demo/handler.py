@@ -60,10 +60,10 @@ def handle_publish(args: argparse.Namespace) -> None:
     event = Event(type=args.type, detail=payload)
 
     with PubSubEventBus(
-            project_id=setting.project_id,
-            topic_name=setting.topic_id,
-            subscription_name=setting.subscription_id,
-            auto_create=True,
+        project_id=setting.project_id,
+        topic_name=setting.topic_id,
+        subscription_name=setting.subscription_id,
+        auto_create=True,
     ) as bus:
         bus.publish(event)
 
@@ -93,10 +93,10 @@ def handle_worker(args: argparse.Namespace) -> None:
         raise SystemExit(1)
 
     with PubSubEventBus(
-            project_id=setting.project_id,
-            topic_name=setting.topic_id,
-            subscription_name=setting.subscription_id,
-            auto_create=True,
+        project_id=setting.project_id,
+        topic_name=setting.topic_id,
+        subscription_name=setting.subscription_id,
+        auto_create=True,
     ) as bus:
         bus.subscribe(execution_job_mapping)
         bus.run_forever()
