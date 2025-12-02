@@ -14,7 +14,7 @@ import types
 from collections import defaultdict
 from typing import Dict, get_type_hints, get_origin, get_args, Union
 
-from core.bus import EventName, EventHandlerWithBus, EventHandlerSimple
+from eventbus.bus import EventName, EventHandlerWithBus, EventHandlerSimple
 
 REGISTRY: Dict[EventName, EventHandlerWithBus | EventHandlerSimple] = defaultdict()
 DLQ_REGISTRY: Dict[EventName, EventHandlerWithBus | EventHandlerSimple] = defaultdict()
@@ -24,14 +24,14 @@ class RegistryError(Exception): ...
 
 
 def _is_event_type(t) -> bool:
-    from core.models import Event
+    from eventbus.models import Event
 
     return isinstance(t, type) and issubclass(t, Event)
 
 
 def _is_bus_like_type(t) -> bool:
     """Return True if t is BaseEventBus, its subclass, or an Optional/Union containing it."""
-    from core.bus import BaseEventBus
+    from eventbus.bus import BaseEventBus
 
     if t is None:
         return False

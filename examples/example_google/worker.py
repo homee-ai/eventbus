@@ -1,10 +1,10 @@
 import time
 import logging
 import random
-from core.bus.google import PubSubEventBus
-from core.tracing import setup_tracing
+from eventbus.bus.google import PubSubEventBus
+from eventbus.tracing import setup_tracing
 
-from core import Event
+from eventbus import Event
 
 logging.getLogger('PubSubEventBus').setLevel(logging.DEBUG)
 

@@ -1,6 +1,6 @@
 import logging
-from core import Event, EventPriority
-from core.bus.local import LocalEventBus
+from eventbus import Event, EventPriority
+from eventbus.bus.local import LocalEventBus
 
 
 logging.getLogger('LocalEventBus').setLevel(logging.DEBUG)

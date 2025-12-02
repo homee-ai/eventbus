@@ -1,6 +1,6 @@
 import logging.config as setup_logging
 from dotenv import load_dotenv
-from core.logging import LOGGING_CONFIG
+from eventbus.logging import LOGGING_CONFIG
 
 from .setting import load_settings
 

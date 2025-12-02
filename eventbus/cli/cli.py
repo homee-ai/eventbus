@@ -13,7 +13,7 @@ CommandHandler = Callable[[argparse.Namespace], None]
 
 # ========= Helpers =========
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="core-cli")
+    parser = argparse.ArgumentParser(prog="eventbus-cli")
     subs = parser.add_subparsers(dest="cmd", required=True)
 
     # publish

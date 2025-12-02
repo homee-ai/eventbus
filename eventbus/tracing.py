@@ -65,7 +65,7 @@ def setup_tracing(
     Example:
         setup_tracing(
             otlp_endpoint="http://localhost:4318/v1/traces",
-            service_name="core-demo")
+            service_name="eventbus-demo")
     """
     global _TRACER
     if not _OTEL_AVAILABLE:

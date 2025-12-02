@@ -8,9 +8,9 @@ from rich.console import Console
 from rich.table import Table
 
 from .setting import load_settings
-from core.models import Event
-from core.tracing import setup_tracing
-from core.bus.google import PubSubEventBus
+from eventbus.models import Event
+from eventbus.tracing import setup_tracing
+from eventbus.bus.google import PubSubEventBus
 from .discover import auto_discover
 from .registry import REGISTRY, RegistryError, DLQ_REGISTRY
 
@@ -91,7 +91,7 @@ def handle_show_config(args: argparse.Namespace) -> None:
 def handle_publish(args: argparse.Namespace) -> None:
     """
     Example command:
-        core-cli publish --type test --payload '{"x":1}'
+        eventbus-cli publish --type test --payload '{"x":1}'
     """
     setting = load_settings()
     setup_tracing(
