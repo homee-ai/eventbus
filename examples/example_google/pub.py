@@ -1,7 +1,7 @@
 import logging
-from eventbus.bus.google import PubSubEventBus
-from eventbus import Event, EventPriority
-from eventbus.tracing import setup_tracing
+from core.bus.google import PubSubEventBus
+from core import Event, EventPriority
+from core.tracing import setup_tracing
 
 
 logging.getLogger('PubSubEventBus').setLevel(logging.DEBUG)
