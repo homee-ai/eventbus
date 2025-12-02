@@ -40,7 +40,7 @@ def auto_discover() -> None:
 
     # Default fallback for in-repo apps
     if not packages:
-        packages = ["app_tasks"]
+        packages = ["tasks"]
 
     for pkg_name in packages:
         # Import the package itself
