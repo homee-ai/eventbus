@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 @dataclass
 class Settings:
     environment: str
+    enable_filter_attributes: bool
     log_level: str
     project_id: str
     topic_id: str
@@ -24,6 +25,7 @@ def load_settings() -> Settings:
     load_dotenv()
     return Settings(
         environment=os.getenv("ENVIRONMENT", "local"),
+        enable_filter_attributes=os.getenv("ENABLE_FILTER_ATTRIBUTES", False),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
         project_id=os.getenv("GCP_PROJECT_ID"),
         topic_id=os.getenv("PUBSUB_TOPIC_NAME"),

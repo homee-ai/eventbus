@@ -131,11 +131,16 @@ def handle_worker(args: argparse.Namespace) -> None:
         console.print(f"Available tasks: {', '.join(REGISTRY.keys())}")
         raise SystemExit(1)
 
+    filter_types = None
+    if setting.enable_filter_attributes and len(execution_job_mapping) == 1:
+        filter_types = args.registry_job_name
+
     with PubSubEventBus(
         project_id=setting.project_id,
         topic_name=setting.topic_id,
         subscription_name=setting.subscription_id,
         auto_create=True,
+        filter_types=filter_types
     ) as bus:
         bus.subscribe(execution_job_mapping)
         bus.run_forever()
