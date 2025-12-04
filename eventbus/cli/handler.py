@@ -133,6 +133,7 @@ def handle_worker(args: argparse.Namespace) -> None:
 
     filter_types = None
     if setting.enable_filter_attributes and len(execution_job_mapping) == 1:
+        console.print("[yellow]Enabling filter attributes.[/yellow]")
         filter_types = args.registry_job_name
 
     with PubSubEventBus(
