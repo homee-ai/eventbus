@@ -12,6 +12,19 @@ from ..tracing import inject_trace_to_event, extract_trace_from_event, start_spa
 from . import BaseEventBus
 
 
+def detail_attrs(event: Event) -> dict[str, str]:
+    detail = {
+        f"event.detail.{k}": str(v)
+        for k, v in event.detail.items()
+        if v is not None
+    }
+
+    return {
+        "event.type": event.type,
+        "event.priority": event.priority.value,
+        **detail,
+    }
+
 class PubSubEventBus(BaseEventBus):
     """
     Google Cloud Pub/Sub implementation of the EventBus.
@@ -109,9 +122,7 @@ class PubSubEventBus(BaseEventBus):
                 parent_span_id=event_trace.get("span_id"),
                 attributes={
                     "pubsub.topic": self._topic_path,
-                    "event.type": event.type,
-                    "event.priority": event.priority.value,
-                    "event.detail": event.detail,
+                    **detail_attrs(event),
                 }
         ):
             future = self._publisher.publish(
@@ -216,9 +227,7 @@ class PubSubEventBus(BaseEventBus):
                     parent_span_id=span_id,
                     attributes={
                         "pubsub.subscription": self._subscription_path,
-                        "event.type": event.type,
-                        "event.priority": event.priority.value,
-                        "event.detail": event.detail,
+                        **detail_attrs(event),
                     }
             ):
                 self.logger.debug(f"Handling event", extra={"type": event.type})
