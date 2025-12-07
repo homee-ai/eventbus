@@ -109,6 +109,7 @@ class PubSubEventBus(BaseEventBus):
                 parent_span_id=event_trace.get("span_id"),
                 attributes={
                     "pubsub.topic": self._topic_path,
+                    "event.type": event.type,
                     "event.priority": event.priority.value,
                     "event.detail": event.detail,
                 }
@@ -215,6 +216,7 @@ class PubSubEventBus(BaseEventBus):
                     parent_span_id=span_id,
                     attributes={
                         "pubsub.subscription": self._subscription_path,
+                        "event.type": event.type,
                         "event.priority": event.priority.value,
                         "event.detail": event.detail,
                     }
