@@ -165,6 +165,7 @@ def start_span(
     name: str = "span",
     trace_id: Optional[str] = None,
     parent_span_id: Optional[str] = None,
+    attributes: Optional[dict[str, Any]] = None,
 ) -> Iterator[Tuple[str, str]]:
     """Context manager to start a new span.
 
@@ -185,6 +186,9 @@ def start_span(
         ctx = _build_parent_context(base_trace, base_span)
         cm = _TRACER.start_as_current_span(name, context=ctx)
         with cm as span:
+            if attributes:
+                for k, v in attributes.items():
+                    span.set_attribute(k, v)
             try:
                 ctx2 = span.get_span_context()
                 this_trace = _hex_id(ctx2.trace_id, 32)

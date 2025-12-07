@@ -98,12 +98,21 @@ class PubSubEventBus(BaseEventBus):
             raise RuntimeError("EventBus is closed")
 
         # Ensure trace is present in event and log publishing; new trace per publication
-        event = inject_trace_to_event(event, new_trace=False)
+        event: Event = inject_trace_to_event(event, new_trace=False)
         event_trace = event.metadata.get("trace", {})
         self.logger.debug(f"Publishing event", extra={"type": event.type})
 
         data = json.dumps(event.model_dump()).encode("utf-8")
-        with start_span(name=f"publish:{event.type}", trace_id=event_trace.get("trace_id"), parent_span_id=event_trace.get("span_id"),):
+        with start_span(
+                name=f"publish:{event.type}",
+                trace_id=event_trace.get("trace_id"),
+                parent_span_id=event_trace.get("span_id"),
+                attributes={
+                    "pubsub.topic": self._topic_path,
+                    "event.priority": event.priority.value,
+                    "event.detail": event.detail,
+                }
+        ):
             future = self._publisher.publish(
                 self._topic_path,
                 data=data,
@@ -192,15 +201,24 @@ class PubSubEventBus(BaseEventBus):
         when callback is called, a message will automatically be suspended for lease extension.
         """
         try:
-            event = self._decode_message(message.data)
+            event: Event = self._decode_message(message.data)
             handler = self.get_with_wildcard(self._handlers, event.type)
             # Extract trace and create a handling span
             trace_id, span_id=extract_trace_from_event(event)
-            with start_span(name=f"handle:{event.type}", trace_id=trace_id, parent_span_id=span_id):
-                if not handler and self.filter_types:
-                    self.logger.warning("No handler for event", extra={"type": event.type})
-                    message.ack()
-                    return
+            if not handler and self.filter_types:
+                self.logger.warning("No handler for event", extra={"type": event.type})
+                message.ack()
+                return
+            with start_span(
+                    name=f"handle:{event.type}",
+                    trace_id=trace_id,
+                    parent_span_id=span_id,
+                    attributes={
+                        "pubsub.subscription": self._subscription_path,
+                        "event.priority": event.priority.value,
+                        "event.detail": event.detail,
+                    }
+            ):
                 self.logger.debug(f"Handling event", extra={"type": event.type})
                 self._invoke_handler(handler, event)
                 self.logger.debug("Handled event", extra={"type": event.type})
