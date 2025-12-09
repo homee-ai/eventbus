@@ -6,19 +6,16 @@ authors = [
     {name = "Ben Liu",email = "ben.liu@homee.ai"}
 ]
 readme = "README.md"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "python-dotenv>=1.1.1",
     "pydantic>=2.11.7",
     "google-cloud-pubsub==2.33.0",
-    "opentelemetry-exporter-otlp (>=1.38.0,<2.0.0)",
+    "opentelemetry-exporter-otlp-proto-http(>=1.27.0,<1.40.0)",
     "python-json-logger (>=4.0.0,<5.0.0)",
-    "rich (>=14.2.0,<15.0.0)"
+    "rich (>=14.2.0,<15.0.0)",
+    "poetry-core (>=2.0.0)"
 ]
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 eventbus-cli = "eventbus.cli.cli:main"
