@@ -19,3 +19,6 @@ dependencies = [
 
 [tool.poetry.scripts]
 eventbus-cli = "eventbus.cli.cli:main"
+
+[project.scripts]
+eventbus-cli = "eventbus.cli.cli:main"
