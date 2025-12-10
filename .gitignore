@@ -28,3 +28,4 @@ MANIFEST
 poetry.toml
 
 .env
+tasks
