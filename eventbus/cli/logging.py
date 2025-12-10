@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from .setting import Settings
 
 
-def _format_settings_error(error: ValidationError) -> str:
+def format_settings_error(error: ValidationError) -> str:
     """
     Turn a Pydantic ValidationError into a short, user-friendly message.
     """
@@ -31,14 +31,7 @@ def _format_settings_error(error: ValidationError) -> str:
     return f"Invalid settings: {error}"
 
 def setup_logging_config():
-    logger = logging.getLogger(__name__)
-    try:
-        setting = Settings()
-    except ValidationError as e:
-        msg = _format_settings_error(e)
-        logger.error(f"Configuration error:\n{msg}")
-        raise SystemExit(1)
-
+    setting = Settings()
     # Force reload the environment variables
     env = setting.environment.lower()
     log_level = setting.log_level.upper()

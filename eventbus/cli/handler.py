@@ -103,9 +103,9 @@ def handle_publish(args: argparse.Namespace) -> None:
     event = Event(type=args.type, detail=payload)
 
     with PubSubEventBus(
-        project_id=setting.project_id,
-        topic_name=setting.topic_id,
-        subscription_name=setting.subscription_id,
+        project_id=setting.gcp_project_id,
+        topic_name=setting.pubsub_topic_name,
+        subscription_name=None,
         auto_create=True,
     ) as bus:
         bus.publish(event)
@@ -137,9 +137,9 @@ def handle_worker(args: argparse.Namespace) -> None:
         filter_types = args.registry_job_name
 
     with PubSubEventBus(
-        project_id=setting.project_id,
-        topic_name=setting.topic_id,
-        subscription_name=setting.subscription_id,
+        project_id=setting.gcp_project_id,
+        topic_name=setting.pubsub_topic_name,
+        subscription_name=setting.pubsub_subscription_name,
         auto_create=True,
         filter_types=filter_types
     ) as bus:
@@ -167,9 +167,9 @@ def handle_dlq_worker(args: argparse.Namespace) -> None:
         raise SystemExit(1)
 
     with PubSubEventBus(
-        project_id=setting.project_id,
-        topic_name=setting.dlq_topic_id,
-        subscription_name=setting.dlq_subscription_id,
+        project_id=setting.gcp_project_id,
+        topic_name=setting.pubsub_dlq_topic_name,
+        subscription_name=setting.pubsub_dlq_subscription_name,
         auto_create=True,
     ) as bus:
         bus.subscribe(execution_job_mapping)

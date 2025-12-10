@@ -3,9 +3,12 @@ from __future__ import annotations
 import argparse
 from typing import Callable, Dict
 from rich.console import Console
+from pydantic import ValidationError
+from google.auth import exceptions as google_auth_exceptions
 
 from .handler import handle_show_config, handle_publish, handle_worker, handle_dlq_worker
-from .logging import setup_logging_config
+from .logging import setup_logging_config, format_settings_error
+from .setting import Settings
 
 console = Console()
 CommandHandler = Callable[[argparse.Namespace], None]
@@ -61,6 +64,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    try:
+        Settings()
+    except ValidationError as e:
+        msg = format_settings_error(e)
+        console.print(f"[red]Configuration error:\n{msg}[/]")
+        raise SystemExit(1)
+
     parser = build_parser()
     args = parser.parse_args()
     setup_logging_config()

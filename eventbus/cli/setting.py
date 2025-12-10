@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     gcp_project_id: str
     pubsub_topic_name: str
     pubsub_dlq_topic_name: str = ""
-    pubsub_subscription_name: str
+    pubsub_subscription_name: str = ""
     pubsub_dlq_subscription_name: str = ""
     otlp_endpoint: str
     otlp_service_name: str
