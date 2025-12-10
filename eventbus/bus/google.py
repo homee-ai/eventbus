@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Optional, Self
+from typing import Optional
 
 from google.api_core.exceptions import AlreadyExists
 from google.cloud import pubsub_v1
@@ -100,7 +100,7 @@ class PubSubEventBus(BaseEventBus):
             self._ensure_sub_resources()
             self.logger.debug(f"PubSubEventBus initialized: {self._topic_path} / {self._subscription_path}")
 
-    def __enter__(self) -> Self:
+    def __enter__(self):
         """Allow usage with 'with PubSubEventBus(...) as bus':"""
         self.auto_close = True
         return self
