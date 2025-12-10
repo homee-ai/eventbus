@@ -3,7 +3,7 @@ import logging
 import fnmatch
 from types import TracebackType
 from typing import Type, Optional
-from typing import Protocol, Iterable, Callable, runtime_checkable, Self
+from typing import Protocol, Iterable, Callable, runtime_checkable
 from ..models import Event
 
 
@@ -52,7 +52,7 @@ class BaseEventBus(ABC, EventBus):
         for event_type in event_types:
             self._handlers.pop(event_type, None)
 
-    def __enter__(self) -> Self:
+    def __enter__(self):
         """Allow usage with 'with PubSubEventBus(...) as bus':"""
         return self
 
