@@ -11,9 +11,10 @@ fallback to a sensible default of scanning the "app_tasks" package if it exists.
 """
 
 import importlib
-import os
+
 import pkgutil
 from typing import Iterable
+from eventbus.cli.setting import Settings
 
 
 def _iter_modules_in_package(pkg_name: str) -> Iterable[str]:
@@ -35,12 +36,10 @@ def auto_discover() -> None:
     Scans packages listed in the EVENTBUS_TASKS_PACKAGES env variable
     (comma-separated). If not set, will try to scan the "app_tasks" package.
     """
-    raw = os.getenv("EVENTBUS_TASKS_PACKAGES", "").strip()
-    packages: list[str] = [p.strip() for p in raw.split(",") if p.strip()]
+    setting = Settings()
+    raw = setting.eventbus_tasks_packages
 
-    # Default fallback for in-repo apps
-    if not packages:
-        packages = ["tasks"]
+    packages: list[str] = [p.strip() for p in raw.split(",") if p.strip()] if raw else ["tasks"]
 
     for pkg_name in packages:
         # Import the package itself
