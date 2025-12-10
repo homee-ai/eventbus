@@ -57,7 +57,7 @@ class LocalEventBus(BaseEventBus):
     def run_forever(self, auto_close: bool = True) -> None:
         # Process all queued events
         for index, event in list(enumerate(self._queue)):
-            handler = self._handlers.get(event.type)
+            handler = self.get_with_wildcard(self._handlers, event.type)
             if handler:
                 extract_trace_from_event(event)
                 with start_span(name=f"handle:{event.type}"):

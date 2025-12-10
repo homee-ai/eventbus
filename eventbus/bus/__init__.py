@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import logging
+import fnmatch
 from types import TracebackType
 from typing import Type, Optional
 from typing import Protocol, Iterable, Callable, runtime_checkable, Self
@@ -84,3 +85,13 @@ class BaseEventBus(ABC, EventBus):
         else:
             # Advanced handler: handler(bus, event)
             handler(self, event)
+    @staticmethod
+    def get_with_wildcard(mapping: dict, key: str, default=None):
+        if key in mapping:
+            return mapping[key]
+
+        for pattern, value in mapping.items():
+            if fnmatch.fnmatch(key, pattern):
+                return value
+
+        return default

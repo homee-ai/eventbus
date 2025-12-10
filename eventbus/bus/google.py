@@ -12,6 +12,19 @@ from ..tracing import inject_trace_to_event, extract_trace_from_event, start_spa
 from . import BaseEventBus
 
 
+def detail_attrs(event: Event) -> dict[str, str]:
+    detail = {
+        f"event.detail.{k}": str(v)
+        for k, v in event.detail.items()
+        if v is not None
+    }
+
+    return {
+        "event.type": event.type,
+        "event.priority": event.priority.value,
+        **detail,
+    }
+
 class PubSubEventBus(BaseEventBus):
     """
     Google Cloud Pub/Sub implementation of the EventBus.
@@ -51,14 +64,15 @@ class PubSubEventBus(BaseEventBus):
         :param auto_create: Create topic and subscription if absent
         :param ack_on_success: Ack after all handlers succeed
         :param nack_on_exception: Nack immediately when handler raises (else allow redelivery on ack-deadline)
-        :param subscription_name: Optional explicit subscription name (default: {topic_name}-sub-{filter_types[0]-{filter_types[1]...}})
+        :param subscription_name: Optional explicit subscription name
         :param filter_types: Optional list of event types to filter this subscription by (Pub/Sub server-side filtering)
         """
         super().__init__()
         self.project_id = project_id
         self.topic_name = topic_name
         # allow overriding subscription name so multiple filtered subscriptions can share the same topic
-        self.subscription_name = subscription_name or f"{topic_name}-sub"
+        self.subscription_name = subscription_name
+
         self.auto_create = auto_create
 
         self.ack_on_success = ack_on_success
@@ -71,20 +85,20 @@ class PubSubEventBus(BaseEventBus):
             exprs = [f'attributes.type="{t}"' for t in filter_types]
             self._subscription_filter = " OR ".join(exprs)
 
-        self._streaming_pull_future: Optional[StreamingPullFuture] = None
         self._publisher = pubsub_v1.PublisherClient()
-        self._subscriber = pubsub_v1.SubscriberClient()
         self._topic_path = self._publisher.topic_path(self.project_id, self.topic_name)
-        self._subscription_path = self._subscriber.subscription_path(self.project_id, self.subscription_name)
+        self._ensure_pub_resources()
         self._closed = False
 
-        self._ensure_resources()
-
-        # Log filter info
         if self._subscription_filter:
             self.logger.info(f"Pub/Sub subscription filter: {self._subscription_filter}")
 
-        self.logger.debug(f"PubSubEventBus initialized: {self._topic_path} / {self._subscription_path}")
+        if self.subscription_name:
+            self._streaming_pull_future: Optional[StreamingPullFuture] = None
+            self._subscriber = pubsub_v1.SubscriberClient()
+            self._subscription_path = self._subscriber.subscription_path(self.project_id, self.subscription_name)
+            self._ensure_sub_resources()
+            self.logger.debug(f"PubSubEventBus initialized: {self._topic_path} / {self._subscription_path}")
 
     def __enter__(self) -> Self:
         """Allow usage with 'with PubSubEventBus(...) as bus':"""
@@ -98,12 +112,20 @@ class PubSubEventBus(BaseEventBus):
             raise RuntimeError("EventBus is closed")
 
         # Ensure trace is present in event and log publishing; new trace per publication
-        event = inject_trace_to_event(event, new_trace=False)
+        event: Event = inject_trace_to_event(event, new_trace=False)
         event_trace = event.metadata.get("trace", {})
         self.logger.debug(f"Publishing event", extra={"type": event.type})
 
         data = json.dumps(event.model_dump()).encode("utf-8")
-        with start_span(name=f"publish:{event.type}", trace_id=event_trace.get("trace_id"), parent_span_id=event_trace.get("span_id"),):
+        with start_span(
+                name=f"publish:{event.type}",
+                trace_id=event_trace.get("trace_id"),
+                parent_span_id=event_trace.get("span_id"),
+                attributes={
+                    "pubsub.topic": self._topic_path,
+                    **detail_attrs(event),
+                }
+        ):
             future = self._publisher.publish(
                 self._topic_path,
                 data=data,
@@ -192,15 +214,23 @@ class PubSubEventBus(BaseEventBus):
         when callback is called, a message will automatically be suspended for lease extension.
         """
         try:
-            event = self._decode_message(message.data)
-            handler = self._handlers.get(event.type)
+            event: Event = self._decode_message(message.data)
+            handler = self.get_with_wildcard(self._handlers, event.type)
             # Extract trace and create a handling span
             trace_id, span_id=extract_trace_from_event(event)
-            with start_span(name=f"handle:{event.type}", trace_id=trace_id, parent_span_id=span_id):
-                if not handler and self.filter_types:
-                    self.logger.warning("No handler for event", extra={"type": event.type})
-                    message.ack()
-                    return
+            if not handler and self.filter_types:
+                self.logger.warning("No handler for event", extra={"type": event.type})
+                message.ack()
+                return
+            with start_span(
+                    name=f"handle:{event.type}",
+                    trace_id=trace_id,
+                    parent_span_id=span_id,
+                    attributes={
+                        "pubsub.subscription": self._subscription_path,
+                        **detail_attrs(event),
+                    }
+            ):
                 self.logger.debug(f"Handling event", extra={"type": event.type})
                 self._invoke_handler(handler, event)
                 self.logger.debug("Handled event", extra={"type": event.type})
@@ -221,7 +251,7 @@ class PubSubEventBus(BaseEventBus):
                     "Handler failed, nack_on_exception=False; leaving message un-acked."
                 )
 
-    def _ensure_resources(self) -> None:
+    def _ensure_pub_resources(self) -> None:
         # Topic
         try:
             self._publisher.get_topic(request={"topic": self._topic_path})
@@ -232,7 +262,7 @@ class PubSubEventBus(BaseEventBus):
                 self._publisher.create_topic(request={"name": self._topic_path})
             except AlreadyExists:
                 pass
-
+    def _ensure_sub_resources(self) -> None:
         # Subscription
         try:
             sub = self._subscriber.get_subscription(request={"subscription": self._subscription_path})
