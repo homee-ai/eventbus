@@ -7,7 +7,7 @@ from typing import Any, Dict, Callable
 from rich.console import Console
 from rich.table import Table
 
-from .setting import load_settings
+from .setting import Settings
 from eventbus.models import Event
 from eventbus.tracing import setup_tracing
 from eventbus.bus.google import PubSubEventBus
@@ -41,7 +41,7 @@ def _registry_job_name() -> None:
 
 
 def handle_show_config(args: argparse.Namespace) -> None:
-    setting = load_settings()
+    setting = Settings()
     _registry_job_name()
     console.print()
 
@@ -93,7 +93,7 @@ def handle_publish(args: argparse.Namespace) -> None:
     Example command:
         eventbus-cli publish --type test --payload '{"x":1}'
     """
-    setting = load_settings()
+    setting = Settings()
     setup_tracing(
         otlp_endpoint=setting.otlp_endpoint,
         service_name=setting.otlp_service_name,
@@ -117,7 +117,7 @@ def handle_worker(args: argparse.Namespace) -> None:
     """
     _registry_job_name()
 
-    setting = load_settings()
+    setting = Settings()
     setup_tracing(
         otlp_endpoint=setting.otlp_endpoint,
         service_name=setting.otlp_service_name,
@@ -152,7 +152,7 @@ def handle_dlq_worker(args: argparse.Namespace) -> None:
     """
     _registry_job_name()
 
-    setting = load_settings()
+    setting = Settings()
     setup_tracing(
         otlp_endpoint=setting.otlp_endpoint,
         service_name=setting.otlp_service_name,

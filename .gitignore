@@ -26,3 +26,5 @@ MANIFEST
 
 .venv
 poetry.toml
+
+.env

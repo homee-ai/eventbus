@@ -1,38 +1,22 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
-from dotenv import load_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
-# NOTE: It’s better to use a Pydantic dataclass instead of a standard dataclass, but considering the overall library dependencies, we use a regular dataclass here.
-@dataclass
-class Settings:
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
     environment: str
-    enable_filter_attributes: bool
+    enable_filter_attributes: bool = False
     log_level: str
-    project_id: str
-    topic_id: str
-    dlq_topic_id: str
-    subscription_id: str
-    dlq_subscription_id: str
+    gcp_project_id: str
+    pubsub_topic_name: str
+    pubsub_dlq_topic_name: str = ""
+    pubsub_subscription_name: str
+    pubsub_dlq_subscription_name: str = ""
     otlp_endpoint: str
     otlp_service_name: str
-    tasks_packages: str | None
-
-
-def load_settings() -> Settings:
-    load_dotenv()
-    return Settings(
-        environment=os.getenv("ENVIRONMENT", "local"),
-        enable_filter_attributes=os.getenv("ENABLE_FILTER_ATTRIBUTES", False),
-        log_level=os.getenv("LOG_LEVEL", "INFO"),
-        project_id=os.getenv("GCP_PROJECT_ID"),
-        topic_id=os.getenv("PUBSUB_TOPIC_NAME"),
-        dlq_topic_id=os.getenv("PUBSUB_DLQ_TOPIC_NAME"),
-        subscription_id=os.getenv("PUBSUB_SUBSCRIPTION_NAME"),
-        dlq_subscription_id=os.getenv("PUBSUB_DLQ_SUBSCRIPTION_NAME"),
-        otlp_endpoint=os.getenv("OTLP_ENDPOINT"),
-        otlp_service_name=os.getenv("OTLP_SERVICE_NAME"),
-        tasks_packages=os.getenv("EVENTBUS_TASKS_PACKAGES"),
-    )
+    eventbus_tasks_packages: str | None = None

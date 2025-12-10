@@ -1,16 +1,43 @@
+import logging
 import logging.config as setup_logging
-from dotenv import load_dotenv
 from eventbus.logging import LOGGING_CONFIG
+from pydantic import ValidationError
 
-from .setting import load_settings
+from .setting import Settings
 
-load_dotenv()
 
+def _format_settings_error(error: ValidationError) -> str:
+    """
+    Turn a Pydantic ValidationError into a short, user-friendly message.
+    """
+    missing_fields: list[str] = []
+
+    for err in error.errors():
+        # err example: {'type': 'missing', 'loc': ('gcp_project_id',), ...}
+        if err.get("type") == "missing" and err.get("loc"):
+            field = str(err["loc"][0])
+            missing_fields.append(field)
+
+    if missing_fields:
+        env_vars = [field.upper() for field in missing_fields]
+        return (
+            "Missing required environment variables:\n"
+            f"  Fields: {', '.join(sorted(missing_fields))}\n"
+            f"  Env vars: {', '.join(sorted(env_vars))}\n"
+            "Please set them in your environment or .env file and retry."
+        )
+
+    # fallback: still keep it short
+    return f"Invalid settings: {error}"
 
 def setup_logging_config():
-    setting = load_settings()
-    """Setup logging configuration after .env is loaded"""
-    # Import here to avoid circular dependency and ensure .env is loaded first
+    logger = logging.getLogger(__name__)
+    try:
+        setting = Settings()
+    except ValidationError as e:
+        msg = _format_settings_error(e)
+        logger.error(f"Configuration error:\n{msg}")
+        raise SystemExit(1)
 
     # Force reload the environment variables
     env = setting.environment.lower()
