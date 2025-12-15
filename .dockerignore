@@ -1,0 +1,9 @@
+.env
+.git
+.venv
+docs
+examples
+tasks
+poetry.toml
+.idea
+__pycache__
