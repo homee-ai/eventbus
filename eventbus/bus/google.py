@@ -205,7 +205,8 @@ class PubSubEventBus(BaseEventBus):
 
     def close(self) -> None:
         self._closed = True
-        self._subscriber.close()
+        if self.subscription_name:
+            self._subscriber.close()
         self._handlers.clear()
 
     # -------- internals --------
