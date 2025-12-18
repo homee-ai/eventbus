@@ -173,7 +173,7 @@ class PubSubEventBus(BaseEventBus):
 
         flow_control = pubsub_v1.types.FlowControl(
             max_messages=self._BATCH_SIZE,
-            max_lease_duration=3600,
+            max_lease_duration=36000,
         )
 
         with self._subscriber:
