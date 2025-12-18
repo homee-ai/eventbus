@@ -17,7 +17,7 @@ def download_from_gcs(bucket_name: str, blob_name: str, file_path: str) -> None:
     )
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
-    logger.info(f"Downloading blob {blob_name} from bucket {bucket_name} to {file_path}")
+    logger.debug(f"Downloading blob {blob_name} from bucket {bucket_name} to {file_path}")
     blob.download_to_filename(file_path)
 
 def download_folder_from_gcs(bucket_name: str, gcs_prefix: str, local_dir: str) -> None:
@@ -81,5 +81,5 @@ def upload_folder_to_gcs(bucket_name: str, local_folder: str, gcs_prefix: str) -
             blob_name = f"{gcs_prefix}/{relative_path}".replace("\\", "/")
 
             blob = bucket.blob(blob_name)
-            logger.info(f"Uploading {local_path} -> gs://{bucket_name}/{blob_name}")
+            logger.debug(f"Uploading {local_path} -> gs://{bucket_name}/{blob_name}")
             blob.upload_from_filename(local_path)
