@@ -169,6 +169,13 @@ class PubSubEventBus(BaseEventBus):
         if self._closed:
             raise RuntimeError("EventBus is closed")
 
+        # Defensive check for missing subscriber configuration
+        if not hasattr(self, "_subscriber") or not hasattr(self, "_subscription_path"):
+            raise RuntimeError(
+                "No subscription configured. Please provide a non-empty subscription_name. "
+                "For CLI, set PUBSUB_SUBSCRIPTION_NAME or PUBSUB_DLQ_SUBSCRIPTION_NAME in your environment/.env."
+            )
+
         self.logger.info("Starting PubSubEventBus streaming worker...")
 
         flow_control = pubsub_v1.types.FlowControl(
