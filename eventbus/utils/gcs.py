@@ -89,6 +89,30 @@ def copy_gcs_folder(
     target_bucket_name: str,
     target_blob_prefix: str,
 ) -> None:
+    """Copy all blobs under a given prefix from one GCS bucket to another.
+
+    This function copies every object in the source bucket whose name starts
+    with ``src_blob_prefix`` into the target bucket under the corresponding
+    path below ``target_blob_prefix``. Directory placeholder blobs (objects
+    whose names end with ``"/"``) are skipped.
+
+    The source and target prefixes have leading and trailing ``"/"`` stripped
+    before being used. For each source blob, the path relative to
+    ``src_blob_prefix`` is computed and appended to ``target_blob_prefix`` so
+    that the directory structure is preserved in the target bucket.
+
+    The copy operation uses the GCS ``rewrite`` API, which supports efficient
+    copying of large objects and may perform the copy in multiple calls for a
+    single blob.
+
+    :param src_bucket_name: Name of the bucket to copy objects from.
+    :param src_blob_prefix: Prefix (virtual folder) of the blobs to copy in
+        the source bucket.
+    :param target_bucket_name: Name of the bucket to copy objects to. This may
+        be the same as ``src_bucket_name``.
+    :param target_blob_prefix: Prefix (virtual folder) under which the copied
+        blobs will be written in the target bucket.
+    """
     credentials, project_id = google.auth.default()
     client = storage.Client(project=project_id, credentials=credentials)
 
