@@ -109,5 +109,10 @@ LOGGING_CONFIG: Dict[str, Any] = {
             "level": "ERROR",
             "propagate": False,
         },
+        "subscriber-streams": {
+            "handlers": ["default"],
+            "level": "ERROR",
+            "propagate": False,
+        },
     },
 }
