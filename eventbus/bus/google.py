@@ -110,19 +110,17 @@ class PubSubEventBus(BaseEventBus):
         return self
 
     # -------- EventBus interface --------
-    def publish(self, event: Event = None, events: List[Event] = None) -> None:
-        if event and events:
-            raise RuntimeError("Cannot publish both event and events")
-        if event:
-            events: List[Event] = [event]
+    def publish(self, event: Event | List[Event] = None) -> None:
+
+        events = event if type(event) == list else [event]
         if self._closed:
             raise RuntimeError("EventBus is closed")
+        publish_futures = []
         for event in events:
             # Ensure trace is present in event and log publishing; new trace per publication
             event: Event = inject_trace_to_event(event, new_trace=False)
             event_trace = event.metadata.get("trace", {})
             self.logger.debug("Publishing event", extra={"type": event.type})
-            publish_futures = []
             data = json.dumps(event.model_dump()).encode("utf-8")
             with start_span(
                 name=f"publish:{event.type}",
@@ -139,15 +137,9 @@ class PubSubEventBus(BaseEventBus):
                     type=event.type,
                     priority=str(event.priority.value) if hasattr(event, "priority") else EventPriority.NORMAL.value,
                 )
-                try:
-                    message_id = publish_future.result()
-                    self.logger.debug(f"Pub/Sub message id: {message_id}")
-                except Exception as e:
-                    self.logger.error("Failed to publish event", extra={"type": event.type}, exc_info=e)
-                    raise
                 publish_futures.append(publish_future)
-            futures.wait(publish_futures, return_when=futures.ALL_COMPLETED)
-            self.logger.info("Published event", extra={"type": event.type})
+        futures.wait(publish_futures, return_when=futures.ALL_COMPLETED)
+        self.logger.info("Published event", extra={"type": event.type})
 
     def consume(self, max_items: Optional[int] = None) -> bool:
         """

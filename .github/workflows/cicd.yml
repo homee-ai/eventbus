@@ -1,0 +1,42 @@
+name: Build Image and Push to GAR
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  GAR_LOCATION: asia-east1
+  SERVER_NAME: eventbus
+
+jobs:
+  build-and-push:
+    name: Build and Push to GAR
+    runs-on: ubuntu-latest-large
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      id: gcp_auth
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_HOUSING_AGENT_PROJECT_GITHUB_ACTIONS_CREDENTIALS }}
+    - name: Configure Docker to use gcloud as credential helper
+      id: configure_docker_helper
+      run: |
+        gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
+
+
+    - name: Build and Push Docker Image
+      run: |
+        docker build --ssh default -f Dockerfile -t asia-east1-docker.pkg.dev/homee-infra/common/eventbus-base:latest .
+        docker push asia-east1-docker.pkg.dev/homee-infra/common/eventbus-base:latest
+
