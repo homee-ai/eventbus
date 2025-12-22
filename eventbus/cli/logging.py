@@ -1,4 +1,3 @@
-import logging
 import logging.config as setup_logging
 from eventbus.logging import LOGGING_CONFIG
 from pydantic import ValidationError
@@ -29,6 +28,7 @@ def format_settings_error(error: ValidationError) -> str:
 
     # fallback: still keep it short
     return f"Invalid settings: {error}"
+
 
 def setup_logging_config():
     setting = Settings()

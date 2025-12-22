@@ -25,9 +25,7 @@ def _iter_modules_in_package(pkg_name: str) -> Iterable[str]:
         return []
     if not hasattr(pkg, "__path__"):
         return []
-    return (
-        m.name for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + ".")
-    )
+    return (m.name for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."))
 
 
 def auto_discover() -> None:

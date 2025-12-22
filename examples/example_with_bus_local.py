@@ -3,18 +3,18 @@ import logging
 from eventbus import Event, EventPriority
 from eventbus.bus.local import LocalEventBus
 
-logging.getLogger('LocalEventBus').setLevel(logging.DEBUG)
-logger = logging.getLogger('Runtime')
+logging.getLogger("LocalEventBus").setLevel(logging.DEBUG)
+logger = logging.getLogger("Runtime")
 
 
 def amazing_ai_job(local_bus: LocalEventBus, event: Event):
-    logging.getLogger('amazing_ai_job').info("[handler]", extra=event.model_dump())
+    logging.getLogger("amazing_ai_job").info("[handler]", extra=event.model_dump())
     time.sleep(10)
     local_bus.publish(Event(type="test_b", priority=EventPriority.HIGH, detail={"job_id": 123}))
 
 
 def second_job(event: Event):
-    logging.getLogger('second_job').info("[handler]", extra=event.model_dump())
+    logging.getLogger("second_job").info("[handler]", extra=event.model_dump())
 
 
 bus = LocalEventBus()
