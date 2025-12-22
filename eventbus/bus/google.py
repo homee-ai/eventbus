@@ -1,7 +1,8 @@
 from __future__ import annotations
+from concurrent import futures
 
 import json
-from typing import Optional
+from typing import Optional, List
 
 from google.api_core.exceptions import AlreadyExists
 from google.cloud import pubsub_v1
@@ -39,10 +40,12 @@ class PubSubEventBus(BaseEventBus):
 
     Attributes:
         _BATCH_SIZE (int): Hard limit to always pull exactly 1 message
+        _CONSUME_BATCH_SIZE (int): Hard limit to always publish message 500
         _PULL_TIMEOUT (int): Timeout in seconds for pulling messages
     """
 
-    _BATCH_SIZE: int = 1  # hard limit: ALWAYS pull exactly 1
+    _CONSUME_BATCH_SIZE: int = 1  # hard limit: ALWAYS pull exactly 1
+    _PUBLISH_BATCH_SIZE: int = 500
     _PULL_TIMEOUT: Optional[int] = None
 
     def __init__(
@@ -82,7 +85,11 @@ class PubSubEventBus(BaseEventBus):
             exprs = [f'attributes.type="{t}"' for t in filter_types]
             self._subscription_filter = " OR ".join(exprs)
 
-        self._publisher = pubsub_v1.PublisherClient()
+        self._publisher = pubsub_v1.PublisherClient(
+            batch_settings = pubsub_v1.types.BatchSettings(
+                max_messages=self._PUBLISH_BATCH_SIZE,
+            )
+        )
         self._topic_path = self._publisher.topic_path(self.project_id, self.topic_name)
         self._ensure_pub_resources()
         self._closed = False
@@ -103,38 +110,43 @@ class PubSubEventBus(BaseEventBus):
         return self
 
     # -------- EventBus interface --------
-
-    def publish(self, event: Event) -> None:
+    def publish(self, event: Event = None, events: List[Event] = None) -> None:
+        if event and events:
+            raise RuntimeError("Cannot publish both event and events")
+        if event:
+            events: List[Event] = [event]
         if self._closed:
             raise RuntimeError("EventBus is closed")
-
-        # Ensure trace is present in event and log publishing; new trace per publication
-        event: Event = inject_trace_to_event(event, new_trace=False)
-        event_trace = event.metadata.get("trace", {})
-        self.logger.debug("Publishing event", extra={"type": event.type})
-
-        data = json.dumps(event.model_dump()).encode("utf-8")
-        with start_span(
-            name=f"publish:{event.type}",
-            trace_id=event_trace.get("trace_id"),
-            parent_span_id=event_trace.get("span_id"),
-            attributes={
-                "pubsub.topic": self._topic_path,
-                **detail_attrs(event),
-            },
-        ):
-            future = self._publisher.publish(
-                self._topic_path,
-                data=data,
-                type=event.type,
-                priority=str(event.priority.value) if hasattr(event, "priority") else EventPriority.NORMAL.value,
-            )
-            try:
-                self.logger.debug(f"Pub/Sub message id: {future.result()}")
-                future.result()
-            except Exception as e:
-                self.logger.error("Failed to publish event", extra={"type": event.type}, exc_info=e)
-                raise
+        for event in events:
+            # Ensure trace is present in event and log publishing; new trace per publication
+            event: Event = inject_trace_to_event(event, new_trace=False)
+            event_trace = event.metadata.get("trace", {})
+            self.logger.debug("Publishing event", extra={"type": event.type})
+            publish_futures = []
+            data = json.dumps(event.model_dump()).encode("utf-8")
+            with start_span(
+                name=f"publish:{event.type}",
+                trace_id=event_trace.get("trace_id"),
+                parent_span_id=event_trace.get("span_id"),
+                attributes={
+                    "pubsub.topic": self._topic_path,
+                    **detail_attrs(event),
+                },
+            ):
+                publish_future = self._publisher.publish(
+                    self._topic_path,
+                    data=data,
+                    type=event.type,
+                    priority=str(event.priority.value) if hasattr(event, "priority") else EventPriority.NORMAL.value,
+                )
+                try:
+                    message_id = publish_future.result()
+                    self.logger.debug(f"Pub/Sub message id: {message_id}")
+                except Exception as e:
+                    self.logger.error("Failed to publish event", extra={"type": event.type}, exc_info=e)
+                    raise
+                publish_futures.append(publish_future)
+            futures.wait(publish_futures, return_when=futures.ALL_COMPLETED)
             self.logger.info("Published event", extra={"type": event.type})
 
     def consume(self, max_items: Optional[int] = None) -> bool:
@@ -149,7 +161,7 @@ class PubSubEventBus(BaseEventBus):
         response = self._subscriber.pull(
             request={
                 "subscription": self._subscription_path,
-                "max_messages": self._BATCH_SIZE,
+                "max_messages": self._CONSUME_BATCH_SIZE,
             },
             timeout=self._PULL_TIMEOUT,
         )
