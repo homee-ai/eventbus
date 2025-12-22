@@ -180,7 +180,7 @@ class PubSubEventBus(BaseEventBus):
         self.logger.info("Starting PubSubEventBus streaming worker...")
 
         flow_control = pubsub_v1.types.FlowControl(
-            max_messages=self._BATCH_SIZE,
+            max_messages=self._CONSUME_BATCH_SIZE,
             max_lease_duration=36000,
         )
 
