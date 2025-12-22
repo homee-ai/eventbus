@@ -37,6 +37,6 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        docker build --ssh default -f Dockerfile -t asia-east1-docker.pkg.dev/homee-infra/common/eventbus-base:latest .
+        docker build -f Dockerfile -t asia-east1-docker.pkg.dev/homee-infra/common/eventbus-base:latest .
         docker push asia-east1-docker.pkg.dev/homee-infra/common/eventbus-base:latest
 
