@@ -15,6 +15,7 @@ from opentelemetry.trace import (
     TraceState as _TraceState,
     set_span_in_context as _set_span_in_context,
 )
+
 _OTEL_AVAILABLE = True
 
 # Context variables to store tracing information per logical context (task/thread)
@@ -55,7 +56,7 @@ def setup_tracing(
     otlp_endpoint: Optional[str] = None,
     *,
     service_name: str = "eventbus",
-    headers: Optional[Dict[str, str]] = None
+    headers: Optional[Dict[str, str]] = None,
 ) -> bool:
     """Optionally configure OpenTelemetry to export spans to an OTLP collector.
 
@@ -75,10 +76,7 @@ def setup_tracing(
     provider = TracerProvider(resource=resource)
 
     if otlp_endpoint:
-        exporter = OTLPSpanExporter(
-            endpoint=otlp_endpoint,
-            headers=headers or {}
-        )
+        exporter = OTLPSpanExporter(endpoint=otlp_endpoint, headers=headers or {})
         processor = BatchSpanProcessor(exporter)
         provider.add_span_processor(processor)
 
@@ -260,4 +258,3 @@ def extract_trace_from_event(event: Event) -> Tuple[Optional[str], Optional[str]
         set_trace_ids(trace_id_val, span_id_val)
         return trace_id_val, span_id_val
     return None, None
-

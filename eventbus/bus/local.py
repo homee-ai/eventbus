@@ -66,7 +66,11 @@ class LocalEventBus(BaseEventBus):
                         self._invoke_handler(handler, event)
                         self.logger.debug("Handled event.", extra={"type": event.type})
                     except Exception as e:
-                        self.logger.exception(f"Handler raised for event.", extra={"type": event.type}, exc_info=e)
+                        self.logger.exception(
+                            "Handler raised for event.",
+                            extra={"type": event.type},
+                            exc_info=e,
+                        )
                     finally:
                         del self._queue[index]
 

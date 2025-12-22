@@ -123,9 +123,7 @@ def handle_worker(args: argparse.Namespace) -> None:
         service_name=setting.otlp_service_name,
     )
     try:
-        execution_job_mapping: Dict[str, Callable[..., Any]] = {
-            job_name: REGISTRY[job_name] for job_name in args.registry_job_name
-        }
+        execution_job_mapping: Dict[str, Callable[..., Any]] = {job_name: REGISTRY[job_name] for job_name in args.registry_job_name}
     except KeyError as e:
         console.print(f"[red]Task name not found: {e}")
         console.print(f"Available tasks: {', '.join(REGISTRY.keys())}")
@@ -141,10 +139,11 @@ def handle_worker(args: argparse.Namespace) -> None:
         topic_name=setting.pubsub_topic_name,
         subscription_name=setting.pubsub_subscription_name,
         auto_create=True,
-        filter_types=filter_types
+        filter_types=filter_types,
     ) as bus:
         bus.subscribe(execution_job_mapping)
         bus.run_forever()
+
 
 def handle_dlq_worker(args: argparse.Namespace) -> None:
     """
@@ -158,9 +157,7 @@ def handle_dlq_worker(args: argparse.Namespace) -> None:
         service_name=setting.otlp_service_name,
     )
     try:
-        execution_job_mapping: Dict[str, Callable[..., Any]] = {
-            job_name: DLQ_REGISTRY[job_name] for job_name in args.registry_job_name
-        }
+        execution_job_mapping: Dict[str, Callable[..., Any]] = {job_name: DLQ_REGISTRY[job_name] for job_name in args.registry_job_name}
     except KeyError as e:
         console.print(f"[red]Task name not found: {e}")
         console.print(f"Available tasks: {', '.join(DLQ_REGISTRY.keys())}")

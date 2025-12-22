@@ -23,3 +23,10 @@ eventbus-cli = "eventbus.cli.cli:main"
 
 [project.scripts]
 eventbus-cli = "eventbus.cli.cli:main"
+
+[tool.ruff]
+preview = true
+line-length = 150
+exclude = [
+    "tmp*",
+]

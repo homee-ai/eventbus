@@ -14,6 +14,7 @@ EventName = str
 
 EventMapping = dict[EventName, EventHandlerWithBus | EventHandlerSimple]
 
+
 @runtime_checkable
 class EventBus(Protocol):
     def publish(self, event: Event) -> None: ...
@@ -34,16 +35,13 @@ class BaseEventBus(ABC, EventBus):
         self.auto_close = False
 
     @abstractmethod
-    def publish(self, event: Event) -> None:
-        ...
+    def publish(self, event: Event) -> None: ...
 
     @abstractmethod
-    def consume(self, max_items: int | None = None) -> bool:
-        ...
+    def consume(self, max_items: int | None = None) -> bool: ...
 
     @abstractmethod
-    def close(self) -> None:
-        ...
+    def close(self) -> None: ...
 
     def subscribe(self, event_handlers: EventMapping) -> None:
         self._handlers.update(event_handlers)
@@ -57,10 +55,10 @@ class BaseEventBus(ABC, EventBus):
         return self
 
     def __exit__(
-            self,
-            exc_type: Type[BaseException] | None,
-            exc_val: BaseException | None,
-            exc_tb: TracebackType | None,
+        self,
+        exc_type: Type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> bool:
         """Ensure resources are always released on exit."""
         try:
@@ -76,6 +74,7 @@ class BaseEventBus(ABC, EventBus):
     def _invoke_handler(self, handler: EventHandlerSimple | EventHandlerWithBus, event: Event) -> None:
         """Internal method to invoke a handler, auto-detecting signature."""
         import inspect
+
         sig = inspect.signature(handler)
 
         # Check number of parameters
@@ -85,6 +84,7 @@ class BaseEventBus(ABC, EventBus):
         else:
             # Advanced handler: handler(bus, event)
             handler(self, event)
+
     @staticmethod
     def get_with_wildcard(mapping: dict, key: str, default=None):
         if key in mapping:

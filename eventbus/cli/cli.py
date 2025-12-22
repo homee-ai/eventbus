@@ -4,9 +4,13 @@ import argparse
 from typing import Callable, Dict
 from rich.console import Console
 from pydantic import ValidationError
-from google.auth import exceptions as google_auth_exceptions
 
-from .handler import handle_show_config, handle_publish, handle_worker, handle_dlq_worker
+from .handler import (
+    handle_show_config,
+    handle_publish,
+    handle_worker,
+    handle_dlq_worker,
+)
 from .logging import setup_logging_config, format_settings_error
 from .setting import Settings
 
