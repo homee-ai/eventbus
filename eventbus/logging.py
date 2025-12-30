@@ -3,6 +3,7 @@ from typing import Any, Dict
 import logging
 from pythonjsonlogger import json
 from opentelemetry import trace
+from .tracing import get_trace_ids as _get_trace_ids
 
 
 class OTELTraceFilter(logging.Filter):
@@ -10,12 +11,14 @@ class OTELTraceFilter(logging.Filter):
         span = trace.get_current_span()
         span_ctx = span.get_span_context() if span is not None else None
 
-        if span_ctx and span_ctx.is_valid:
+        if span_ctx and getattr(span_ctx, "is_valid", False):
             record.trace_id = format(span_ctx.trace_id, "032x")
             record.span_id = format(span_ctx.span_id, "016x")
         else:
-            record.trace_id = "-"
-            record.span_id = "-"
+            # Fallback to eventbus.contextvars-based tracing (works even without active OTel span)
+            trace_id, span_id = _get_trace_ids()
+            record.trace_id = trace_id or "-"
+            record.span_id = span_id or "-"
         return True
 
 
