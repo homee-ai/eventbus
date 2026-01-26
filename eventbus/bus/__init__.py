@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import logging
 import fnmatch
 from types import TracebackType
-from typing import Type, Optional
+from typing import Type, Optional, List
 from typing import Protocol, Iterable, Callable, runtime_checkable
 from ..models import Event
 
@@ -17,7 +17,7 @@ EventMapping = dict[EventName, EventHandlerWithBus | EventHandlerSimple]
 
 @runtime_checkable
 class EventBus(Protocol):
-    def publish(self, event: Event) -> None: ...
+    def publish(self, event: Event | List[Event] = None) -> None: ...
 
     def subscribe(self, event_mapping: EventMapping) -> None: ...
 
@@ -35,7 +35,7 @@ class BaseEventBus(ABC, EventBus):
         self.auto_close = False
 
     @abstractmethod
-    def publish(self, event: Event) -> None: ...
+    def publish(self, event: Event | List[Event] = None) -> None: ...
 
     @abstractmethod
     def consume(self, max_items: int | None = None) -> bool: ...
