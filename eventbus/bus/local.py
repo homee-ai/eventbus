@@ -20,13 +20,14 @@ class LocalEventBus(BaseEventBus):
         self._seq: int = 0
         self._closed = False
 
-    def publish(self, event: Event, *args, **kwargs) -> None:
+    def publish(self, event: Event | List[Event] = None) -> None:
         if self._closed:
             raise RuntimeError("EventBus is closed")
-
-        inject_trace_to_event(event, new_trace=True)
-        self.logger.info("Published event", extra={"type": event.type})
-        self._queue.append(event)
+        events = event if type(event) == list else [event]
+        for event in events:
+            event: Event = inject_trace_to_event(event, new_trace=False)
+            self.logger.info("Published event", extra={"type": event.type})
+            self._queue.append(event)
 
     def consume(self, max_items: Optional[int] = None) -> bool:
         processed_count = 0
